@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音谋加 - 管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #0f0f1a; color: #fff; min-height: 100vh; }
+        .wrap { max-width: 800px; margin: 0 auto; padding: 30px 20px; }
+        h1 { font-size: 22px; margin-bottom: 6px; }
+        .subtitle { color: #666; font-size: 13px; margin-bottom: 30px; }
+        .card { background: #1a1a2e; border-radius: 14px; padding: 22px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.06); }
+        .card-title { font-size: 15px; font-weight: bold; margin-bottom: 14px; color: #ccc; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 8px; }
+        .stat { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 14px; text-align: center; }
+        .stat-num { font-size: 26px; font-weight: bold; background: linear-gradient(90deg, #00d9ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 4px; }
+        .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field label { font-size: 12px; color: #888; }
+        .field input, .field select { padding: 9px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-size: 14px; }
+        .field input:focus, .field select:focus { outline: none; border-color: #00d9ff; }
+        .btn { padding: 10px 22px; border: none; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(90deg, #00d9ff, #00ff88); color: #1a1a2e; font-weight: bold; }
+        .btn-primary:hover { transform: scale(1.03); }
+        .codes-list { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+        .code-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; font-size: 13px; }
+        .code-val { font-family: monospace; font-size: 14px; letter-spacing: 1px; color: #00ff88; font-weight: bold; }
+        .code-used { color: #ff6b6b; }
+        .code-unused { color: #00ff88; }
+        .alert { padding: 12px 16px; border-radius: 9px; font-size: 13px; margin-bottom: 14px; display: none; }
+        .alert.show { display: block; }
+        .alert.success { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2); color: #00ff88; }
+        .alert.error { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.2); color: #ff6b6b; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { color: #666; font-weight: normal; font-size: 12px; }
+        td { color: #ccc; }
+        .copy-btn { background: rgba(0,217,255,0.15); border: none; border-radius: 6px; padding: 4px 10px; color: #00d9ff; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>音谋加 管理后台</h1>
+    <p class="subtitle">解锁码管理 · 数据统计</p>
+
+    <div class="card">
+        <div class="card-title">数据概览</div>
+        <div class="stats">
+            <div class="stat"><div class="stat-num" id="statUsers">-</div><div class="stat-label">用户数</div></div>
+            <div class="stat"><div class="stat-num" id="statGen">-</div><div class="stat-label">生成次数</div></div>
+            <div class="stat"><div class="stat-num" id="statCodes">-</div><div class="stat-label">已生成码</div></div>
+            <div class="stat"><div class="stat-num" id="statUsed">-</div><div class="stat-label">已使用码</div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">生成解锁码</div>
+        <div id="alertGen" class="alert"></div>
+        <div class="form-row">
+            <div class="field">
+                <label>数量</label>
+                <input type="number" id="genCount" value="5" min="1" max="100" style="width:80px">
+            </div>
+            <div class="field">
+                <label>有效期</label>
+                <select id="genDuration">
+                    <option value="1y">1 年</option>
+                    <option value="1m">1 个月</option>
+                    <option value="1w">1 周</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>前缀</label>
+                <input type="text" id="genPrefix" value="YINMJ" maxlength="6" style="width:80px">
+            </div>
+            <div class="field" style="justify-content:flex-end">
+                <label>&nbsp;</label>
+                <button class="btn btn-primary" onclick="genCodes()">生成</button>
+            </div>
+        </div>
+        <div class="codes-list" id="codesList"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">收款流程</div>
+        <p style="font-size:13px;color:#888;line-height:1.8">
+            1. 在上方生成解锁码<br>
+            2. 用户转账 1 元后，将解锁码发给他<br>
+            3. 用户在 App 内输入解锁码即可继续使用<br>
+            4. 有效期默认 1 年，可按需调整
+        </p>
+    </div>
+</div>
+
+<script>
+const ADMIN_TOKEN = prompt('请输入管理员口令：') || '';
+
+async function api(path, opts) {
+    opts = opts || {};
+    const res = await fetch(path, Object.assign({
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': ADMIN_TOKEN }
+    }, opts));
+    const json = await res.json();
+    if (!res.ok) { alert('请求失败 (status ' + res.status + ')'); throw new Error(); }
+    return json;
+}
+
+async function loadStats() {
+    try {
+        const json = await api('/api/admin/stats');
+        if (json.success) {
+            var d = json.data;
+            document.getElementById('statUsers').textContent = d.totalUsers;
+            document.getElementById('statGen').textContent = d.totalGenerations;
+            document.getElementById('statCodes').textContent = d.totalCodes;
+            document.getElementById('statUsed').textContent = d.usedCodes;
+        }
+    } catch(e) {}
+}
+
+async function genCodes() {
+    var count = parseInt(document.getElementById('genCount').value) || 5;
+    var duration = document.getElementById('genDuration').value;
+    var prefix = (document.getElementById('genPrefix').value || 'YINMJ').toUpperCase();
+    var alertEl = document.getElementById('alertGen');
+    var listEl = document.getElementById('codesList');
+
+    try {
+        var json = await api('/api/admin/gen-codes', {
+            method: 'POST',
+            body: JSON.stringify({ count: count, duration: duration, prefix: prefix })
+        });
+        if (json.success) {
+            var exp = new Date(json.data.expiresAt).toLocaleDateString('zh-CN');
+            alertEl.textContent = '生成了 ' + json.data.codes.length + ' 个解锁码（码有效期至 ' + exp + '）';
+            alertEl.className = 'alert show success';
+            listEl.innerHTML = '';
+            for (var i = 0; i < json.data.codes.length; i++) {
+                var c = json.data.codes[i];
+                var div = document.createElement('div');
+                div.className = 'code-item';
+                div.innerHTML = '<span class="code-val">' + c + '</span><button class="copy-btn" onclick="copyC(\'' + c + '\')">复制</button>';
+                listEl.appendChild(div);
+            }
+            loadStats();
+        } else {
+            alertEl.textContent = '错误: ' + json.error;
+            alertEl.className = 'alert show error';
+        }
+    } catch(e) {
+        alertEl.textContent = '请求失败，请检查口令';
+        alertEl.className = 'alert show error';
+    }
+}
+
+function copyC(code) {
+    navigator.clipboard.writeText(code);
+    alert('已复制: ' + code);
+}
+
+loadStats();
+</script>
+</body>
+</html>

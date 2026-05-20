@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "server-v2.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "server-v2.js" }
+  ],
+  "env": {
+    "AI_MUSIC_API_KEY": "@yinmoujia_api_key"
+  }
+}

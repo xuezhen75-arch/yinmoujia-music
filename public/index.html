@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>音谋加 - 让每个人都能用音乐表达自己</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            padding: 28px 0 15px;
+        }
+
+        .logo { font-size: 48px; margin-bottom: 10px; }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle { color: #888; font-size: 14px; margin-top: 8px; }
+
+        /* 配额卡片 */
+        .quota-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 18px 0;
+        }
+
+        .quota-left { display: flex; align-items: center; gap: 10px; }
+
+        .quota-icon { font-size: 22px; }
+
+        .quota-text { font-size: 14px; color: #ccc; }
+
+        .quota-text strong { color: #00ff88; font-size: 16px; }
+
+        .quota-dots { display: flex; gap: 5px; }
+
+        .quota-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .quota-dot.used { background: #00d9ff; }
+        .quota-dot.unlocked { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+
+        /* 标签网格 */
+        .step { margin: 20px 0; }
+
+        .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+
+        .step-num {
+            width: 26px; height: 26px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 13px; color: #1a1a2e; flex-shrink: 0;
+        }
+
+        .step-title { font-size: 15px; color: #ccc; }
+
+        .tag-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .tag {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 11px 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .tag:active { transform: scale(0.95); }
+
+        .tag.selected {
+            background: rgba(0,217,255,0.2);
+            border-color: #00d9ff;
+        }
+
+        .tag .icon { font-size: 18px; margin-bottom: 3px; }
+        .tag .label { font-size: 10px; color: #ccc; }
+        .tag.selected .label { color: #fff; }
+
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .style-option {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 9px 3px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .style-option:active { transform: scale(0.95); }
+
+        .style-option.selected {
+            background: rgba(0,255,136,0.15);
+            border-color: #00ff88;
+        }
+
+        .style-option .icon { font-size: 17px; margin-bottom: 2px; }
+        .style-option .name { font-size: 10px; font-weight: 500; }
+        .style-option .desc { font-size: 9px; color: #555; margin-top: 1px; }
+        .style-option.selected .desc { color: #888; }
+
+        /* 已选摘要 */
+        .selected-summary {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            min-height: 40px;
+        }
+
+        .selected-item {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            padding: 4px 11px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* 生成按钮 */
+        .generate-btn {
+            width: 100%;
+            padding: 17px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border: none;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: bold;
+            color: #1a1a2e;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .generate-btn:active:not(:disabled) { transform: scale(0.98); }
+        .generate-btn:disabled { background: #2a2a3e; color: #555; cursor: not-allowed; }
+
+        /* 加载动画 */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10,10,20,0.97);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active { display: flex; }
+
+        .loading-spinner {
+            width: 68px; height: 68px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #00d9ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text { margin-top: 26px; font-size: 17px; color: #ccc; }
+        .loading-tip {
+            margin-top: 11px; font-size: 13px; color: #666;
+            text-align: center; padding: 0 40px; line-height: 1.6;
+        }
+
+        .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
+
+        .loading-progress { width: 210px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 20px; overflow: hidden; }
+        .loading-progress-bar { height: 100%; background: linear-gradient(90deg, #00d9ff, #00ff88); width: 0%; animation: progress 120s linear forwards; }
+        @keyframes progress { to { width: 90%; } }
+
+        /* 结果页面 */
+        .result-page {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            z-index: 500;
+            display: none;
+            overflow-y: auto;
+        }
+
+        .result-page.active { display: block; }
+
+        .result-content { max-width: 420px; margin: 0 auto; padding: 28px 20px; }
+
+        .result-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-size: 12px; font-weight: bold;
+        }
+
+        .album-cover {
+            width: 210px; height: 210px;
+            margin: 26px auto;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 85px;
+            box-shadow: 0 18px 45px rgba(102, 126, 234, 0.35);
+            overflow: hidden;
+        }
+
+        .album-cover img { width: 100%; height: 100%; object-fit: cover; }
+
+        .music-title { font-size: 21px; font-weight: bold; text-align: center; margin-bottom: 4px; }
+        .music-artist { color: #888; font-size: 13px; text-align: center; margin-bottom: 18px; }
+
+        .remaining-tip {
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 14px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+
+        .remaining-tip.warn { color: #ffd700; background: rgba(255,215,0,0.1); }
+
+        /* 播放器 */
+        .player-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 20px;
+            margin: 18px 0;
+        }
+
+        .player-progress { width: 100%; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; margin-bottom: 8px; cursor: pointer; }
+        .player-progress-bar { height: 100%; background: linear-gradient(90deg, #00d9ff, #00ff88); width: 0%; transition: width 0.1s linear; }
+        .player-time { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 16px; }
+
+        .player-controls { display: flex; justify-content: center; align-items: center; gap: 28px; }
+
+        .control-btn { background: none; border: none; font-size: 24px; cursor: pointer; opacity: 0.5; transition: all 0.2s; }
+        .control-btn:hover { opacity: 1; }
+
+        .play-btn {
+            width: 60px; height: 60px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border-radius: 50%; border: none;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; cursor: pointer; transition: all 0.2s;
+        }
+        .play-btn:active { transform: scale(0.95); }
+
+        /* 操作按钮 */
+        .action-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
+        .action-btn {
+            background: rgba(255,255,255,0.08);
+            border: none; border-radius: 13px;
+            padding: 14px 6px; text-align: center;
+            cursor: pointer; transition: all 0.2s; color: #fff;
+        }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn .icon { font-size: 24px; margin-bottom: 4px; }
+        .action-btn .label { font-size: 11px; color: #888; }
+
+        .back-btn {
+            width: 100%; padding: 15px;
+            background: transparent;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 13px;
+            color: #fff; font-size: 14px; cursor: pointer; margin-top: 10px;
+            transition: all 0.2s;
+        }
+        .back-btn:active { background: rgba(255,255,255,0.05); }
+
+        /* 解锁码弹窗 */
+        .unlock-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.88);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .unlock-modal.active { display: flex; }
+
+        .unlock-content {
+            background: #1a1a2e;
+            border-radius: 22px;
+            padding: 28px 24px;
+            width: 92%;
+            max-width: 360px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .unlock-icon { font-size: 48px; margin-bottom: 14px; }
+
+        .unlock-title { font-size: 18px; font-weight: bold; margin-bottom: 6px; }
+
+        .unlock-desc {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+
+        .unlock-desc strong { color: #ffd700; }
+
+        /* 付费指引 */
+        .pay-guide {
+            background: rgba(255,215,0,0.08);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .pay-guide-title { font-size: 13px; font-weight: bold; color: #ffd700; margin-bottom: 8px; }
+
+        .pay-guide p { font-size: 12px; color: #ccc; margin-bottom: 6px; line-height: 1.5; }
+
+        /* 码输入 */
+        .code-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .code-input:focus { outline: none; border-color: #00ff88; }
+        .code-input::placeholder { color: #444; letter-spacing: 1px; font-weight: normal; }
+
+        .unlock-btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border: none;
+            border-radius: 11px;
+            color: #1a1a2e;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .unlock-close {
+            background: transparent;
+            border: none;
+            color: #666;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 10px;
+            padding: 6px;
+        }
+
+        .unlock-status {
+            font-size: 12px;
+            margin-top: 8px;
+            min-height: 18px;
+        }
+        .unlock-status.error { color: #ff6b6b; }
+        .unlock-status.success { color: #00ff88; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px; left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 9999;
+            transition: transform 0.3s ease;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: #00ff88; color: #00ff88; }
+        .toast.error { border-color: #ff6b6b; color: #ff6b6b; }
+        .toast.warn { border-color: #ffd700; color: #ffd700; }
+
+        /* 底部 */
+        .footer { text-align: center; padding: 24px 0; color: #444; font-size: 11px; }
+
+        /* 首次提示 */
+        .first-tip {
+            background: rgba(0,217,255,0.08);
+            border: 1px solid rgba(0,217,255,0.15);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: 12px;
+            color: #00d9ff;
+            text-align: center;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- 主界面 -->
+<div class="container" id="mainPage">
+    <div class="header">
+        <div class="logo">🎵</div>
+        <h1 class="title">音谋加</h1>
+        <p class="subtitle">选择心情，AI为你创作一首歌</p>
+    </div>
+
+    <!-- 首次提示 -->
+    <div class="first-tip" id="firstTip" style="display:none">
+        🎁 新用户免费生成 3 次，快来试试吧！
+    </div>
+
+    <!-- 配额卡片 -->
+    <div class="quota-card" id="quotaCard">
+        <div class="quota-left">
+            <span class="quota-icon" id="quotaIcon">🎵</span>
+            <div class="quota-text">
+                <span id="quotaText">加载中...</span>
+            </div>
+        </div>
+        <div class="quota-dots" id="quotaDots"></div>
+    </div>
+
+    <!-- 心情 -->
+    <div class="step">
+        <div class="step-header">
+            <span class="step-num">1</span>
+            <span class="step-title">你现在的心情是？</span>
+        </div>
+        <div class="tag-grid" id="moodGrid">
+            <div class="tag" data-value="happy"><div class="icon">😊</div><div class="label">开心</div></div>
+            <div class="tag" data-value="sad"><div class="icon">😢</div><div class="label">难过</div></div>
+            <div class="tag" data-value="love"><div class="icon">💕</div><div class="label">恋爱</div></div>
+            <div class="tag" data-value="relax"><div class="icon">😌</div><div class="label">放松</div></div>
+            <div class="tag" data-value="energetic"><div class="icon">🔥</div><div class="label">热血</div></div>
+            <div class="tag" data-value="melancholy"><div class="icon">🌧️</div><div class="label">忧郁</div></div>
+            <div class="tag" data-value="anxious"><div class="icon">😰</div><div class="label">焦虑</div></div>
+            <div class="tag" data-value="nostalgic"><div class="icon">📷</div><div class="label">怀旧</div></div>
+            <div class="tag" data-value="peaceful"><div class="icon">🧘</div><div class="label">平静</div></div>
+            <div class="tag" data-value="grateful"><div class="icon">🙏</div><div class="label">感恩</div></div>
+        </div>
+    </div>
+
+    <!-- 场景 -->
+    <div class="step">
+        <div class="step-header">
+            <span class="step-num">2</span>
+            <span class="step-title">什么场景？</span>
+        </div>
+        <div class="tag-grid" id="sceneGrid">
+            <div class="tag" data-value="morning"><div class="icon">🌅</div><div class="label">清晨</div></div>
+            <div class="tag" data-value="night"><div class="icon">🌙</div><div class="label">夜晚</div></div>
+            <div class="tag" data-value="workout"><div class="icon">💪</div><div class="label">健身</div></div>
+            <div class="tag" data-value="study"><div class="icon">📚</div><div class="label">学习</div></div>
+            <div class="tag" data-value="travel"><div class="icon">✈️</div><div class="label">旅行</div></div>
+            <div class="tag" data-value="alone"><div class="icon">☕</div><div class="label">独处</div></div>
+            <div class="tag" data-value="party"><div class="icon">🎉</div><div class="label">派对</div></div>
+            <div class="tag" data-value="rain"><div class="icon">🌧️</div><div class="label">雨天</div></div>
+            <div class="tag" data-value="commute"><div class="icon">🚇</div><div class="label">通勤</div></div>
+            <div class="tag" data-value="sunset"><div class="icon">🌇</div><div class="label">黄昏</div></div>
+        </div>
+    </div>
+
+    <!-- 风格 -->
+    <div class="step">
+        <div class="step-header">
+            <span class="step-num">3</span>
+            <span class="step-title">喜欢什么风格？</span>
+        </div>
+        <div class="style-grid" id="styleGrid">
+            <div class="style-option" data-value="pop"><div class="icon">🎤</div><div class="name">流行</div><div class="desc">朗朗上口</div></div>
+            <div class="style-option" data-value="rock"><div class="icon">🎸</div><div class="name">摇滚</div><div class="desc">激情澎湃</div></div>
+            <div class="style-option" data-value="electronic"><div class="icon">🎹</div><div class="name">电子</div><div class="desc">动感节奏</div></div>
+            <div class="style-option" data-value="folk"><div class="icon">🪕</div><div class="name">民谣</div><div class="desc">温暖叙事</div></div>
+            <div class="style-option" data-value="jazz"><div class="icon">🎷</div><div class="name">爵士</div><div class="desc">慵懒优雅</div></div>
+            <div class="style-option" data-value="classical"><div class="icon">🎻</div><div class="name">古典</div><div class="desc">典雅大气</div></div>
+            <div class="style-option" data-value="healing"><div class="icon">🌿</div><div class="name">治愈</div><div class="desc">舒缓心灵</div></div>
+            <div class="style-option" data-value="ambient"><div class="icon">🌊</div><div class="name">氛围</div><div class="desc">空灵飘渺</div></div>
+            <div class="style-option" data-value="rnb"><div class="icon">🎧</div><div class="name">R&B</div><div class="desc">丝滑律动</div></div>
+            <div class="style-option" data-value="cinematic"><div class="icon">🎬</div><div class="name">电影</div><div class="desc">戏剧张力</div></div>
+        </div>
+    </div>
+
+    <!-- 关键词 -->
+    <div class="step">
+        <div class="step-header">
+            <span class="step-num">4</span>
+            <span class="step-title">加什么 feel？（可选）</span>
+        </div>
+        <div class="tag-grid" id="keywordGrid">
+            <div class="tag" data-value="sunshine"><div class="icon">☀️</div><div class="label">阳光</div></div>
+            <div class="tag" data-value="rainy"><div class="icon">🌧️</div><div class="label">雨声</div></div>
+            <div class="tag" data-value="coffee"><div class="icon">☕</div><div class="label">咖啡</div></div>
+            <div class="tag" data-value="dreamy"><div class="icon">✨</div><div class="label">梦幻</div></div>
+            <div class="tag" data-value="vintage"><div class="icon">📻</div><div class="label">复古</div></div>
+            <div class="tag" data-value="neon"><div class="icon">🌃</div><div class="label">霓虹</div></div>
+            <div class="tag" data-value="nature"><div class="icon">🌲</div><div class="label">自然</div></div>
+            <div class="tag" data-value="urban"><div class="icon">🏙️</div><div class="label">都市</div></div>
+            <div class="tag" data-value="tropical"><div class="icon">🌴</div><div class="label">热带</div></div>
+            <div class="tag" data-value="winter"><div class="icon">❄️</div><div class="label">冬日</div></div>
+        </div>
+    </div>
+
+    <!-- 已选 -->
+    <div class="selected-summary" id="selectedSummary"></div>
+
+    <!-- 按钮 -->
+    <button class="generate-btn" id="generateBtn" disabled onclick="generateMusic()">
+        <span>✨</span>
+        <span id="btnText">生成我的音乐</span>
+    </button>
+
+    <div class="footer">
+        © 大树音乐 · 纳心治愈系 | 由 Suno AI 驱动<br>
+        <span style="color:#555">免费3次 · 解锁码续费</span>
+    </div>
+</div>
+
+<!-- 加载中 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text"><span id="loadingText">AI 正在创作</span><span class="loading-dots"></span></div>
+    <div class="loading-tip">结合你的选择，生成专属音乐<br>通常需要 60~120 秒，请耐心等待</div>
+    <div class="loading-progress"><div class="loading-progress-bar" id="loadingBar"></div></div>
+</div>
+
+<!-- 结果页 -->
+<div class="result-page" id="resultPage">
+    <div class="result-content">
+        <div class="result-header">
+            <span class="result-badge">🎵 AI 专属创作</span>
+        </div>
+
+        <div class="album-cover" id="albumCover">🎵</div>
+
+        <div class="music-title" id="musicTitle">专属音乐</div>
+        <div class="music-artist">by 音谋加 × 大树音乐</div>
+
+        <div class="remaining-tip" id="remainingTip"></div>
+
+        <div class="player-card">
+            <div class="player-progress" onclick="seekAudio(event)">
+                <div class="player-progress-bar" id="progressBar"></div>
+            </div>
+            <div class="player-time">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">--:--</span>
+            </div>
+            <div class="player-controls">
+                <button class="control-btn" onclick="seekBack()">⏮️</button>
+                <button class="play-btn" id="playBtn" onclick="togglePlay()">▶️</button>
+                <button class="control-btn" onclick="seekForward()">⏭️</button>
+            </div>
+        </div>
+
+        <div class="action-btns">
+            <button class="action-btn" onclick="goBack()">
+                <div class="icon">🔄</div><div class="label">再来一首</div>
+            </button>
+            <button class="action-btn" onclick="shareMusic()">
+                <div class="icon">📤</div><div class="label">分享</div>
+            </button>
+            <button class="action-btn" onclick="downloadMusic()">
+                <div class="icon">💾</div><div class="label">保存</div>
+            </button>
+        </div>
+
+        <button class="back-btn" onclick="goBack()">← 返回继续创作</button>
+
+        <div class="footer">
+            © 大树音乐 · 纳心治愈系
+        </div>
+    </div>
+</div>
+
+<!-- 解锁码弹窗 -->
+<div class="unlock-modal" id="unlockModal">
+    <div class="unlock-content">
+        <div class="unlock-icon">🔑</div>
+        <div class="unlock-title" id="unlockTitle">免费次数已用完</div>
+        <div class="unlock-desc" id="unlockDesc">
+            您已使用全部 <strong>3</strong> 次免费生成<br>
+            请扫码联系作者获取解锁码
+        </div>
+
+        <div class="pay-guide">
+            <div class="pay-guide-title">💡 如何获取解锁码</div>
+            <p>① 扫码 → 加微信（或查看朋友圈）</p>
+            <p>② 转账 <strong>1元</strong> → 获取专属解锁码</p>
+            <p>③ 输入解锁码 → 继续无限创作</p>
+        </div>
+
+        <input type="text" class="code-input" id="codeInput" placeholder="输入解锁码" maxlength="20">
+        <button class="unlock-btn" onclick="submitUnlockCode()">解锁继续使用</button>
+        <div class="unlock-status" id="unlockStatus"></div>
+        <button class="unlock-close" onclick="closeUnlockModal()">稍后再说</button>
+    </div>
+</div>
+
+<script>
+// ============ 配置 ============
+const API_BASE = '';  // 同源，后端直接提供静态文件
+const DEVICE_KEY = 'yinmoujia_device_v2';
+const FREE_LIMIT = 3;
+
+// ============ 状态 ============
+const state = {
+    deviceId: null,
+    mood: null, scene: null, style: null, keyword: null,
+    isPlaying: false,
+    currentAudioUrl: null,
+    audioPlayer: null,
+    remaining: null,
+    unlocked: false,
+    unlockedExpiry: null
+};
+
+// ============ 初始化 ============
+document.addEventListener('DOMContentLoaded', () => {
+    initDevice();
+    setupTags();
+    loadQuota();
+});
+
+function initDevice() {
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id) {
+        id = 'd_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem(DEVICE_KEY, id);
+    }
+    state.deviceId = id;
+}
+
+// ============ 配额 ============
+async function loadQuota() {
+    try {
+        const res = await fetch(`${API_BASE}/api/quota?device_id=${state.deviceId}`);
+        const json = await res.json();
+        if (json.success) {
+            const q = json.data;
+            state.remaining = q.remaining;
+            state.unlocked = q.unlocked;
+            state.unlockedExpiry = q.unlockExpiry;
+            renderQuota(q);
+        }
+    } catch (e) {
+        // 离线模式，显示本地缓存
+        renderQuota({ remaining: '?', freeUsed: 0, freeLimit: FREE_LIMIT, unlocked: false });
+    }
+}
+
+function renderQuota(q) {
+    const dotsEl = document.getElementById('quotaDots');
+    const textEl = document.getElementById('quotaText');
+    const iconEl = document.getElementById('quotaIcon');
+    const tipEl = document.getElementById('firstTip');
+
+    // 渲染点
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < q.freeLimit; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'quota-dot';
+        if (q.unlocked) {
+            dot.className += ' unlocked';
+        } else if (i < q.freeUsed) {
+            dot.className += ' used';
+        }
+        dotsEl.appendChild(dot);
+    }
+
+    // 文字
+    if (q.unlocked) {
+        const expDate = q.unlockExpiry ? new Date(q.unlockExpiry).toLocaleDateString('zh-CN') : '';
+        textEl.innerHTML = `<strong style="color:#00ff88">已解锁</strong> · 有效期至 ${expDate}`;
+        iconEl.textContent = '🔓';
+        if (tipEl) tipEl.style.display = 'none';
+    } else {
+        textEl.innerHTML = `剩余 <strong>${q.remaining}</strong> / ${q.freeLimit} 次免费`;
+        iconEl.textContent = '🎵';
+        if (q.freeUsed === 0 && tipEl) tipEl.style.display = 'block';
+    }
+}
+
+// ============ 标签 ============
+function setupTags() {
+    document.querySelectorAll('#moodGrid .tag').forEach(t => t.addEventListener('click', () => selectTag('mood', t, '#moodGrid')));
+    document.querySelectorAll('#sceneGrid .tag').forEach(t => t.addEventListener('click', () => selectTag('scene', t, '#sceneGrid')));
+    document.querySelectorAll('#keywordGrid .tag').forEach(t => t.addEventListener('click', () => selectTag('keyword', t, '#keywordGrid')));
+    document.querySelectorAll('#styleGrid .style-option').forEach(t => t.addEventListener('click', () => selectStyle(t)));
+}
+
+function selectTag(type, el, gridId) {
+    document.querySelectorAll(`${gridId} .tag`).forEach(t => t.classList.remove('selected'));
+    if (state[type] === el.dataset.value) {
+        state[type] = null;
+    } else {
+        el.classList.add('selected');
+        state[type] = el.dataset.value;
+    }
+    updateSummary(); updateButton();
+}
+
+function selectStyle(el) {
+    document.querySelectorAll('#styleGrid .style-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    state.style = el.dataset.value;
+    updateSummary(); updateButton();
+}
+
+function updateSummary() {
+    const names = { happy:'开心', sad:'难过', love:'恋爱', relax:'放松', energetic:'热血',
+                     melancholy:'忧郁', anxious:'焦虑', nostalgic:'怀旧', peaceful:'平静', grateful:'感恩',
+                     morning:'清晨', night:'夜晚', workout:'健身', study:'学习', travel:'旅行',
+                     alone:'独处', party:'派对', rain:'雨天', commute:'通勤', sunset:'黄昏',
+                     pop:'流行', rock:'摇滚', electronic:'电子', folk:'民谣', jazz:'爵士',
+                     classical:'古典', healing:'治愈', ambient:'氛围', rnb:'R&B', cinematic:'电影',
+                     sunshine:'阳光', rainy:'雨声', coffee:'咖啡', dreamy:'梦幻', vintage:'复古',
+                     neon:'霓虹', nature:'自然', urban:'都市', tropical:'热带', winter:'冬日' };
+    const items = [];
+    if (state.mood)    items.push(`<span class="selected-item">${names[state.mood]}</span>`);
+    if (state.scene)   items.push(`<span class="selected-item">${names[state.scene]}</span>`);
+    if (state.style)   items.push(`<span class="selected-item">${names[state.style]}</span>`);
+    if (state.keyword) items.push(`<span class="selected-item">${names[state.keyword]}</span>`);
+    document.getElementById('selectedSummary').innerHTML = items.join('');
+}
+
+function updateButton() {
+    const btn = document.getElementById('generateBtn');
+    const ready = !!(state.mood && state.scene && state.style);
+    btn.disabled = !ready;
+}
+
+// ============ 解锁码 ============
+function openUnlockModal() {
+    document.getElementById('unlockModal').classList.add('active');
+    document.getElementById('codeInput').value = '';
+    document.getElementById('unlockStatus').textContent = '';
+}
+
+function closeUnlockModal() {
+    document.getElementById('unlockModal').classList.remove('active');
+}
+
+async function submitUnlockCode() {
+    const code = document.getElementById('codeInput').value.trim();
+    const statusEl = document.getElementById('unlockStatus');
+
+    if (!code) {
+        statusEl.textContent = '请输入解锁码';
+        statusEl.className = 'unlock-status error';
+        return;
+    }
+
+    statusEl.textContent = '验证中...';
+    statusEl.className = 'unlock-status';
+
+    try {
+        const res = await fetch(`${API_BASE}/api/unlock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: state.deviceId, code })
+        });
+
+        const json = await res.json();
+
+        if (json.success) {
+            statusEl.textContent = '✅ ' + json.data.message;
+            statusEl.className = 'unlock-status success';
+            state.unlocked = true;
+            state.unlockedExpiry = json.data.expiry;
+            closeUnlockModal();
+            loadQuota();
+            showToast('🎉 ' + json.data.message, 'success');
+        } else {
+            statusEl.textContent = '❌ ' + json.error;
+            statusEl.className = 'unlock-status error';
+        }
+    } catch (e) {
+        statusEl.textContent = '❌ 网络错误，请重试';
+        statusEl.className = 'unlock-status error';
+    }
+}
+
+// ============ 生成 ============
+async function generateMusic() {
+    if (!state.mood || !state.scene || !state.style) return;
+
+    // 检查配额
+    if (!state.unlocked && state.remaining <= 0) {
+        openUnlockModal();
+        return;
+    }
+
+    const overlay = document.getElementById('loadingOverlay');
+    const bar = document.getElementById('loadingBar');
+    bar.style.animation = 'none';
+    bar.offsetHeight;
+    bar.style.animation = 'progress 120s linear forwards';
+
+    document.getElementById('loadingText').textContent = 'AI 正在创作';
+    overlay.classList.add('active');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                device_id: state.deviceId,
+                mood: state.mood,
+                scene: state.scene,
+                style: state.style,
+                keyword: state.keyword
+            }),
+            signal: AbortSignal.timeout(200000)
+        });
+
+        const json = await res.json();
+
+        if (json.needPayment) {
+            overlay.classList.remove('active');
+            showToast('⚠️ ' + json.data.message, 'warn');
+            openUnlockModal();
+            return;
+        }
+
+        if (!json.success) {
+            throw new Error(json.error || '生成失败');
+        }
+
+        document.getElementById('loadingText').textContent = '创作完成！';
+        await sleep(800);
+        showResult(json.data);
+
+    } catch (e) {
+        overlay.classList.remove('active');
+        if (e.name === 'TimeoutError') {
+            showToast('⏱️ 请求超时，请稍后再试', 'error');
+        } else {
+            showToast('❌ 生成失败：' + e.message, 'error');
+        }
+    }
+}
+
+// ============ 结果 ============
+function showResult(data) {
+    document.getElementById('loadingOverlay').classList.remove('active');
+    document.getElementById('resultPage').classList.add('active');
+
+    document.getElementById('musicTitle').textContent = data.title || '专属音乐';
+
+    // 剩余提示
+    const tipEl = document.getElementById('remainingTip');
+    if (data.remaining !== undefined) {
+        if (data.remaining > 0) {
+            tipEl.textContent = `🎵 还剩 ${data.remaining} 次免费机会`;
+            tipEl.className = 'remaining-tip';
+        } else {
+            tipEl.textContent = '⚠️ 免费次数已用完，请输入解锁码继续';
+            tipEl.className = 'remaining-tip warn';
+        }
+    } else {
+        tipEl.textContent = '';
+    }
+
+    // 封面
+    const cover = document.getElementById('albumCover');
+    if (data.image_url) {
+        const img = document.createElement('img');
+        img.src = data.image_url;
+        img.onerror = () => { cover.innerHTML = '🎵'; };
+        cover.innerHTML = '';
+        cover.appendChild(img);
+    } else {
+        cover.innerHTML = '🎵';
+    }
+
+    // 音频
+    state.currentAudioUrl = data.audio_url;
+    state.isPlaying = false;
+    document.getElementById('playBtn').textContent = '▶️';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('currentTime').textContent = '0:00';
+    document.getElementById('totalTime').textContent = '--:--';
+
+    if (data.audio_url) {
+        initAudio(data.audio_url);
+    }
+
+    // 更新配额
+    if (data.remaining !== undefined) {
+        state.remaining = data.remaining;
+    }
+}
+
+function initAudio(url) {
+    if (state.audioPlayer) { state.audioPlayer.pause(); state.audioPlayer = null; }
+    state.audioPlayer = new Audio(url);
+    state.audioPlayer.addEventListener('loadedmetadata', () => {
+        const m = Math.floor(state.audioPlayer.duration / 60);
+        const s = Math.floor(state.audioPlayer.duration % 60);
+        document.getElementById('totalTime').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    });
+    state.audioPlayer.addEventListener('ended', () => {
+        state.isPlaying = false;
+        document.getElementById('playBtn').textContent = '▶️';
+        document.getElementById('progressBar').style.width = '0%';
+    });
+    state.audioPlayer.addEventListener('timeupdate', () => {
+        if (state.audioPlayer.duration) {
+            const pct = (state.audioPlayer.currentTime / state.audioPlayer.duration) * 100;
+            document.getElementById('progressBar').style.width = pct + '%';
+            const m = Math.floor(state.audioPlayer.currentTime / 60);
+            const s = Math.floor(state.audioPlayer.currentTime % 60);
+            document.getElementById('currentTime').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+        }
+    });
+}
+
+function togglePlay() {
+    if (!state.currentAudioUrl || !state.audioPlayer) { showToast('音频加载中...', 'warn'); return; }
+    state.isPlaying = !state.isPlaying;
+    document.getElementById('playBtn').textContent = state.isPlaying ? '⏸️' : '▶️';
+    if (state.isPlaying) state.audioPlayer.play().catch(() => {
+        state.isPlaying = false;
+        document.getElementById('playBtn').textContent = '▶️';
+        showToast('⚠️ 播放失败，可能链接被拦截', 'warn');
+    });
+    else state.audioPlayer.pause();
+}
+
+function seekBack() { if (state.audioPlayer) state.audioPlayer.currentTime = 0; }
+function seekForward() { if (state.audioPlayer && state.audioPlayer.duration) state.audioPlayer.currentTime = state.audioPlayer.duration - 1; }
+function seekAudio(e) {
+    if (!state.audioPlayer || !state.audioPlayer.duration) return;
+    const rect = e.target.getBoundingClientRect();
+    state.audioPlayer.currentTime = ((e.clientX - rect.left) / rect.width) * state.audioPlayer.duration;
+}
+
+function goBack() {
+    document.getElementById('resultPage').classList.remove('active');
+    if (state.audioPlayer) { state.audioPlayer.pause(); state.audioPlayer = null; }
+    state.isPlaying = false;
+    document.querySelectorAll('.tag, .style-option').forEach(el => el.classList.remove('selected'));
+    document.getElementById('selectedSummary').innerHTML = '';
+    state.mood = state.scene = state.style = state.keyword = null;
+    updateButton();
+    loadQuota();
+}
+
+function shareMusic() {
+    if (navigator.share) {
+        navigator.share({ title: '🎵 ' + document.getElementById('musicTitle').textContent, text: '我用音谋加创作了这首歌，快来听听！', url: window.location.href });
+    } else {
+        navigator.clipboard?.writeText(window.location.href).then(() => showToast('🔗 链接已复制！', 'success'));
+    }
+}
+
+function downloadMusic() {
+    if (!state.currentAudioUrl) { showToast('没有音频可下载', 'warn'); return; }
+    const a = document.createElement('a');
+    a.href = state.currentAudioUrl;
+    a.download = (document.getElementById('musicTitle').textContent || 'music') + '.mp3';
+    a.target = '_blank';
+    a.click();
+}
+
+// ============ 工具 ============
+function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
