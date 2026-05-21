@@ -1,6 +1,6 @@
 /**
  * 音谋加 - 简单数据库模块 (JSON文件存储)
- * 无需安装任何数据库，部署极简
+ * v2.3 - 支持昵称登录
  */
 
 const fs = require('fs');
@@ -21,19 +21,25 @@ const PRICE_PER_SONG = 0.8;  // 每首收费（元）
 function init() {
     if (!fs.existsSync(DB_PATH)) {
         fs.writeFileSync(DB_PATH, JSON.stringify({
-            users: {},      // deviceId -> { freeUsed, unlockCodes[], unlockExpiry, balance }
+            users: {},      // deviceId -> { freeUsed, unlockCodes[], unlockExpiry, balance, nickname }
             codes: {},      // code -> { used, usedBy, usedAt, createdAt }
-            freeList: []    // 免费名单：[{ deviceId, name, addedAt }]
+            freeList: []    // 免费名单：[{ nickname, deviceId, addedAt }]
         }, null, 2));
     }
-    // 兼容旧数据：确保 freeList 字段存在
+    // 兼容旧数据
     const db = read();
-    if (!db.freeList) { db.freeList = []; write(db); }
-    // 兼容旧用户数据：确保 balance 字段存在
     let changed = false;
+    if (!db.freeList) { db.freeList = []; changed = true; }
+    // 兼容旧用户数据
     for (const id in db.users) {
         if (db.users[id].balance === undefined) { db.users[id].balance = 0; changed = true; }
+        if (db.users[id].nickname === undefined) { db.users[id].nickname = ''; changed = true; }
     }
+    // 兼容旧freeList格式（旧的用deviceId，新的用nickname）
+    db.freeList.forEach(item => {
+        if (!item.nickname && item.name) { item.nickname = item.name; }
+        if (!item.nickname && !item.name) { item.nickname = item.deviceId; }
+    });
     if (changed) write(db);
 }
 
@@ -41,7 +47,7 @@ function read() {
     try {
         return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
     } catch (e) {
-        return { users: {}, codes: {} };
+        return { users: {}, codes: {}, freeList: [] };
     }
 }
 
@@ -71,10 +77,14 @@ module.exports = {
     // 获取用户配额信息
     getUserQuota(deviceId) {
         const db = read();
-        const user = db.users[deviceId] || { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0 };
+        const user = db.users[deviceId] || { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0, nickname: '' };
 
         const remaining = Math.max(0, FREE_LIMIT - user.freeUsed);
-        const isFreeUser = db.freeList.some(f => f.deviceId === deviceId);
+        // 按昵称匹配免费名单（优先），也兼容旧的deviceId匹配
+        const isFreeUser = db.freeList.some(f =>
+            (f.nickname && user.nickname && f.nickname === user.nickname) ||
+            f.deviceId === deviceId
+        );
         const canGenerate = remaining > 0
             || (user.unlockExpiry && new Date(user.unlockExpiry) > new Date())
             || isFreeUser
@@ -89,18 +99,33 @@ module.exports = {
             unlockExpiry: user.unlockExpiry,
             balance: user.balance || 0,
             isFreeUser,
-            pricePerSong: PRICE_PER_SONG
+            pricePerSong: PRICE_PER_SONG,
+            nickname: user.nickname || ''
         };
+    },
+
+    // 设置/更新用户昵称
+    setNickname(deviceId, nickname) {
+        const db = read();
+        if (!db.users[deviceId]) {
+            db.users[deviceId] = { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0, nickname: '' };
+        }
+        db.users[deviceId].nickname = nickname;
+        write(db);
+        return true;
     },
 
     // 消耗免费次数或余额
     consumeFree(deviceId) {
         const db = read();
         if (!db.users[deviceId]) {
-            db.users[deviceId] = { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0 };
+            db.users[deviceId] = { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0, nickname: '' };
         }
 
-        const isFreeUser = db.freeList.some(f => f.deviceId === deviceId);
+        const isFreeUser = db.freeList.some(f =>
+            (f.nickname && db.users[deviceId].nickname && f.nickname === db.users[deviceId].nickname) ||
+            f.deviceId === deviceId
+        );
         const remaining = Math.max(0, FREE_LIMIT - db.users[deviceId].freeUsed);
         const isUnlocked = db.users[deviceId].unlockExpiry && new Date(db.users[deviceId].unlockExpiry) > new Date();
 
@@ -108,13 +133,10 @@ module.exports = {
         if (remaining > 0) {
             db.users[deviceId].freeUsed++;
         } else if (isFreeUser) {
-            // 免费名单用户不扣费
             db.users[deviceId].freeUsed++;
         } else if (isUnlocked) {
-            // 解锁用户不扣费
             db.users[deviceId].freeUsed++;
         } else if (db.users[deviceId].balance >= PRICE_PER_SONG) {
-            // 扣余额
             db.users[deviceId].balance = Math.round((db.users[deviceId].balance - PRICE_PER_SONG) * 100) / 100;
         } else {
             return null; // 余额不足
@@ -126,42 +148,57 @@ module.exports = {
 
     // ===== 免费名单管理 =====
 
-    // 获取免费名单
     getFreeList() {
         const db = read();
         return db.freeList || [];
     },
 
-    // 添加免费用户
-    addFreeUser(deviceId, name) {
+    // 按昵称添加免费用户
+    addFreeUser(nickname) {
         const db = read();
-        if (db.freeList.some(f => f.deviceId === deviceId)) {
-            return { success: false, error: '该设备已在免费名单中' };
+        if (!nickname || !nickname.trim()) {
+            return { success: false, error: '请输入昵称' };
         }
-        db.freeList.push({ deviceId, name: name || deviceId, addedAt: new Date().toISOString() });
+        nickname = nickname.trim();
+        // 检查是否已存在
+        if (db.freeList.some(f => f.nickname === nickname)) {
+            return { success: false, error: '该昵称已在免费名单中' };
+        }
+        db.freeList.push({ nickname, deviceId: '', addedAt: new Date().toISOString() });
         write(db);
         return { success: true };
     },
 
-    // 删除免费用户
-    removeFreeUser(deviceId) {
+    // 按昵称删除免费用户
+    removeFreeUser(nickname) {
         const db = read();
-        const idx = db.freeList.findIndex(f => f.deviceId === deviceId);
-        if (idx === -1) return { success: false, error: '未找到该设备' };
+        const idx = db.freeList.findIndex(f => f.nickname === nickname);
+        if (idx === -1) return { success: false, error: '未找到该用户' };
         db.freeList.splice(idx, 1);
         write(db);
         return { success: true };
     },
 
-    // 充值余额
-    addBalance(deviceId, amount) {
+    // 充值余额（按昵称或deviceId）
+    addBalance(identifier, amount) {
         const db = read();
-        if (!db.users[deviceId]) {
-            db.users[deviceId] = { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0 };
+        // 先按昵称找，再按deviceId找
+        let targetId = null;
+        for (const id in db.users) {
+            if (db.users[id].nickname === identifier || id === identifier) {
+                targetId = id;
+                break;
+            }
         }
-        db.users[deviceId].balance = Math.round(((db.users[deviceId].balance || 0) + amount) * 100) / 100;
+        if (!targetId) {
+            return { success: false, error: '未找到该用户' };
+        }
+        if (!db.users[targetId]) {
+            db.users[targetId] = { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0 };
+        }
+        db.users[targetId].balance = Math.round(((db.users[targetId].balance || 0) + amount) * 100) / 100;
         write(db);
-        return { success: true, balance: db.users[deviceId].balance };
+        return { success: true, balance: db.users[targetId].balance, nickname: db.users[targetId].nickname };
     },
 
     // 获取所有用户列表（管理员）
@@ -169,6 +206,7 @@ module.exports = {
         const db = read();
         return Object.entries(db.users).map(([deviceId, user]) => ({
             deviceId,
+            nickname: user.nickname || '(未设置)',
             freeUsed: user.freeUsed || 0,
             balance: user.balance || 0,
             unlocked: user.unlockExpiry && new Date(user.unlockExpiry) > new Date(),
@@ -181,7 +219,6 @@ module.exports = {
         const db = read();
         const normalizedCode = code.trim().toUpperCase();
 
-        // 检查码是否存在且未使用
         if (!db.codes[normalizedCode]) {
             return { success: false, error: '解锁码无效' };
         }
@@ -192,17 +229,14 @@ module.exports = {
             return { success: false, error: '该解锁码已被使用' };
         }
 
-        // 检查是否过期
         if (codeData.expiresAt && new Date(codeData.expiresAt) < new Date()) {
             return { success: false, error: '解锁码已过期' };
         }
 
-        // 标记为已使用
         db.codes[normalizedCode].used = true;
         db.codes[normalizedCode].usedBy = deviceId;
         db.codes[normalizedCode].usedAt = new Date().toISOString();
 
-        // 给用户开通权限（默认1年有效期）
         const expiry = codeData.duration || '1y';
         let expiryDate;
         switch (expiry) {
@@ -213,7 +247,7 @@ module.exports = {
         }
 
         if (!db.users[deviceId]) {
-            db.users[deviceId] = { freeUsed: 0, unlockCodes: [], unlockExpiry: null };
+            db.users[deviceId] = { freeUsed: 0, unlockCodes: [], unlockExpiry: null, balance: 0, nickname: '' };
         }
         db.users[deviceId].unlockExpiry = expiryDate.toISOString();
         db.users[deviceId].unlockCodes.push({ code: normalizedCode, usedAt: new Date().toISOString() });
@@ -228,8 +262,8 @@ module.exports = {
         const {
             count = 1,
             prefix = 'YINMJ',
-            duration = '1y',    // 1y=1年, 1m=1月, 1w=1周
-            expiresIn = 30     // 码本身多少天内有效（天）
+            duration = '1y',
+            expiresIn = 30
         } = options;
 
         const codes = [];
@@ -278,20 +312,17 @@ module.exports = {
 
     // ===== 分享记录 =====
 
-    // 保存分享记录
     saveShareRecord(record) {
         const shares = readShares();
         shares[record.id] = record;
         writeShares(shares);
     },
 
-    // 获取分享记录
     getShareRecord(id) {
         const shares = readShares();
         return shares[id] || null;
     },
 
-    // 增加播放计数
     incrementSharePlays(id) {
         const shares = readShares();
         if (shares[id]) {

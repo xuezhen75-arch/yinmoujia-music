@@ -162,6 +162,22 @@
 
         .first-tip { background: rgba(0,217,255,0.08); border: 1px solid rgba(0,217,255,0.15); border-radius: 12px; padding: 12px 16px; margin: 12px 0; font-size: 12px; color: #00d9ff; text-align: center; line-height: 1.6; }
         .footer { text-align: center; padding: 24px 0; color: #444; font-size: 11px; }
+
+        /* 昵称弹窗 */
+        .nickname-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,26,0.97); display: none; justify-content: center; align-items: center; z-index: 3000; }
+        .nickname-modal.active { display: flex; }
+        .nickname-content { background: #1a1a2e; border-radius: 22px; padding: 32px 24px; width: 88%; max-width: 340px; border: 1px solid rgba(0,217,255,0.2); text-align: center; }
+        .nickname-logo { font-size: 52px; margin-bottom: 16px; }
+        .nickname-title { font-size: 20px; font-weight: bold; margin-bottom: 6px; background: linear-gradient(90deg, #00d9ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .nickname-desc { font-size: 13px; color: #888; margin-bottom: 22px; line-height: 1.6; }
+        .nickname-input { width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.12); border-radius: 12px; color: #fff; font-size: 16px; text-align: center; letter-spacing: 1px; margin-bottom: 12px; }
+        .nickname-input:focus { outline: none; border-color: #00d9ff; background: rgba(0,217,255,0.05); }
+        .nickname-input::placeholder { color: #444; }
+        .nickname-btn { width: 100%; padding: 14px; background: linear-gradient(90deg, #00d9ff, #00ff88); border: none; border-radius: 12px; color: #1a1a2e; font-weight: bold; font-size: 16px; cursor: pointer; transition: all 0.2s; }
+        .nickname-btn:active { transform: scale(0.98); }
+        .nickname-status { font-size: 12px; margin-top: 10px; min-height: 18px; }
+        .nickname-status.error { color: #ff6b6b; }
+        .nickname-hint { font-size: 11px; color: #555; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -365,6 +381,19 @@
     </div>
 </div>
 
+<!-- 昵称弹窗（首次使用） -->
+<div class="nickname-modal" id="nicknameModal">
+    <div class="nickname-content">
+        <div class="nickname-logo">🎵</div>
+        <div class="nickname-title">欢迎来到音谋加</div>
+        <div class="nickname-desc">输入你的昵称开始创作<br>免费体验 5 次 AI 音乐生成</div>
+        <input type="text" class="nickname-input" id="nicknameInput" placeholder="输入你的昵称" maxlength="12">
+        <button class="nickname-btn" onclick="submitNickname()">开始创作</button>
+        <div class="nickname-status" id="nicknameStatus"></div>
+        <div class="nickname-hint">昵称最多12个字，设置后可在后台管理</div>
+    </div>
+</div>
+
 <!-- 解锁码弹窗 -->
 <div class="unlock-modal" id="unlockModal">
     <div class="unlock-content">
@@ -392,11 +421,13 @@
 // ============ 配置 ============
 const API_BASE = '';
 const DEVICE_KEY = 'yinmoujia_device_v2';
+const NICKNAME_KEY = 'yinmoujia_nickname';
 const FREE_LIMIT = 5;
 
 // ============ 状态 ============
 const state = {
     deviceId: null,
+    nickname: '',
     mood: null, scene: null, style: null, keyword: null,
     lyricsMode: 'ai',  // 'ai' | 'custom' | 'instrumental'
     isPlaying: false,
@@ -417,8 +448,8 @@ const state = {
 // ============ 初始化 ============
 document.addEventListener('DOMContentLoaded', () => {
     initDevice();
+    checkNickname();
     setupTags();
-    loadQuota();
 });
 
 function initDevice() {
@@ -430,10 +461,59 @@ function initDevice() {
     state.deviceId = id;
 }
 
+// ============ 昵称 ============
+function checkNickname() {
+    const saved = localStorage.getItem(NICKNAME_KEY);
+    if (saved && saved.trim()) {
+        state.nickname = saved.trim();
+        loadQuota();
+    } else {
+        showNicknameModal();
+    }
+}
+
+function showNicknameModal() {
+    document.getElementById('nicknameModal').classList.add('active');
+    setTimeout(() => document.getElementById('nicknameInput').focus(), 300);
+    // 回车提交
+    document.getElementById('nicknameInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') submitNickname();
+    });
+}
+
+function submitNickname() {
+    const name = document.getElementById('nicknameInput').value.trim();
+    const statusEl = document.getElementById('nicknameStatus');
+    if (!name) {
+        statusEl.textContent = '请输入昵称';
+        statusEl.className = 'nickname-status error';
+        return;
+    }
+    if (name.length > 12) {
+        statusEl.textContent = '昵称最多12个字';
+        statusEl.className = 'nickname-status error';
+        return;
+    }
+
+    state.nickname = name;
+    localStorage.setItem(NICKNAME_KEY, name);
+
+    // 同步到后端
+    fetch(`${API_BASE}/api/set-nickname`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: state.deviceId, nickname: name })
+    }).catch(() => {});
+
+    document.getElementById('nicknameModal').classList.remove('active');
+    showToast('欢迎你，' + name + '！', 'success');
+    loadQuota();
+}
+
 // ============ 配额 ============
 async function loadQuota() {
     try {
-        const res = await fetch(`${API_BASE}/api/quota?device_id=${state.deviceId}`);
+        const res = await fetch(`${API_BASE}/api/quota?device_id=${state.deviceId}&nickname=${encodeURIComponent(state.nickname)}`);
         const json = await res.json();
         if (json.success) {
             const q = json.data;
@@ -603,6 +683,7 @@ async function generateMusic() {
     try {
         const bodyData = {
             device_id: state.deviceId,
+            nickname: state.nickname,
             mood: state.mood, scene: state.scene, style: state.style, keyword: state.keyword,
             instrumental: state.lyricsMode === 'instrumental',
             lyrics: state.lyricsMode === 'custom' ? (document.getElementById('lyricsInput').value.trim() || '') : ''

@@ -42,7 +42,6 @@
         th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
         th { color: #666; font-weight: normal; font-size: 12px; }
         td { color: #ccc; }
-        td .id-text { font-family: monospace; font-size: 11px; color: #888; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .empty-hint { text-align: center; color: #555; font-size: 13px; padding: 20px 0; }
         .copy-btn { background: rgba(0,217,255,0.15); border: none; border-radius: 6px; padding: 4px 10px; color: #00d9ff; cursor: pointer; font-size: 12px; }
         .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: rgba(255,255,255,0.04); padding: 4px; border-radius: 10px; }
@@ -50,19 +49,20 @@
         .tab-item.active { background: rgba(0,217,255,0.15); color: #fff; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
-        .free-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; margin-bottom: 6px; }
-        .free-name { font-weight: bold; color: #00ff88; }
-        .free-id { font-family: monospace; font-size: 11px; color: #666; }
-        .free-date { font-size: 11px; color: #555; }
+        .free-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(255,255,255,0.04); border-radius: 10px; margin-bottom: 8px; }
+        .free-name { font-weight: bold; color: #00ff88; font-size: 15px; }
+        .free-date { font-size: 11px; color: #555; margin-top: 3px; }
         .config-info { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
         .config-item { background: rgba(255,255,255,0.04); padding: 10px 16px; border-radius: 8px; font-size: 13px; }
         .config-item strong { color: #ffd700; }
+        .user-nickname { font-weight: 600; color: #00d9ff; }
+        .user-device { font-family: monospace; font-size: 11px; color: #555; margin-top: 2px; }
     </style>
 </head>
 <body>
 <div class="wrap">
     <h1>音谋加 管理后台</h1>
-    <p class="subtitle">v2.1 · 免费名单 · 解锁码管理 · 用户充值 · 数据统计</p>
+    <p class="subtitle">v2.3 · 昵称登录 · VIP名单 · 解锁码管理 · 用户充值</p>
 
     <!-- 数据概览 -->
     <div class="card">
@@ -70,7 +70,7 @@
         <div class="stats">
             <div class="stat"><div class="stat-num" id="statUsers">-</div><div class="stat-label">用户数</div></div>
             <div class="stat"><div class="stat-num" id="statGen">-</div><div class="stat-label">生成次数</div></div>
-            <div class="stat"><div class="stat-num" id="statFree">-</div><div class="stat-label">免费名单</div></div>
+            <div class="stat"><div class="stat-num" id="statFree">-</div><div class="stat-label">VIP名单</div></div>
             <div class="stat"><div class="stat-num" id="statRevenue">-</div><div class="stat-label">总充值额</div></div>
         </div>
         <div class="config-info">
@@ -83,29 +83,25 @@
 
     <!-- Tab 切换 -->
     <div class="tab-bar">
-        <div class="tab-item active" onclick="switchTab('freeList')">免费名单</div>
+        <div class="tab-item active" onclick="switchTab('freeList')">VIP名单</div>
         <div class="tab-item" onclick="switchTab('codes')">解锁码</div>
         <div class="tab-item" onclick="switchTab('users')">用户管理</div>
-        <div class="tab-item" onclick="switchTab('help')">收款说明</div>
+        <div class="tab-item" onclick="switchTab('help')">说明</div>
     </div>
 
-    <!-- Tab 1: 免费名单 -->
+    <!-- Tab 1: VIP名单 -->
     <div class="tab-panel active" id="panel-freeList">
         <div class="card">
-            <div class="card-title">免费名单管理 <span class="badge">VIP用户不消耗余额</span></div>
+            <div class="card-title">VIP免费名单 <span class="badge">不限次数 不扣费用</span></div>
             <div id="alertFree" class="alert"></div>
             <div class="form-row">
-                <div class="field" style="flex:1;min-width:120px">
-                    <label>设备ID</label>
-                    <input type="text" id="freeDeviceId" placeholder="输入设备ID">
-                </div>
-                <div class="field" style="flex:1;min-width:100px">
-                    <label>备注名</label>
-                    <input type="text" id="freeName" placeholder="如：虾哥、测试用户">
+                <div class="field" style="flex:1;min-width:140px">
+                    <label>用户昵称</label>
+                    <input type="text" id="freeNickname" placeholder="输入用户昵称" maxlength="12">
                 </div>
                 <div class="field" style="justify-content:flex-end">
                     <label>&nbsp;</label>
-                    <button class="btn btn-primary btn-sm" onclick="addFreeUser()">添加</button>
+                    <button class="btn btn-primary btn-sm" onclick="addFreeUser()">添加VIP</button>
                 </div>
             </div>
             <div class="codes-list" id="freeList">
@@ -148,13 +144,13 @@
     <!-- Tab 3: 用户管理 -->
     <div class="tab-panel" id="panel-users">
         <div class="card">
-            <div class="card-title">用户列表</div>
+            <div class="card-title">用户列表 <span class="badge">显示昵称</span></div>
             <div id="alertUser" class="alert"></div>
             <div style="overflow-x:auto">
                 <table>
                     <thead>
                         <tr>
-                            <th>设备ID</th>
+                            <th>昵称</th>
                             <th>已生成</th>
                             <th>余额</th>
                             <th>状态</th>
@@ -172,14 +168,23 @@
     <!-- Tab 4: 帮助 -->
     <div class="tab-panel" id="panel-help">
         <div class="card">
-            <div class="card-title">收款与运营说明</div>
+            <div class="card-title">运营说明</div>
             <table>
                 <tr><th>模式</th><th>说明</th><th>操作</th></tr>
-                <tr><td><strong style="color:#00ff88">免费5次</strong></td><td>新用户自动获得5次免费体验</td><td>无需操作</td></tr>
-                <tr><td><strong style="color:#ffd700">¥0.8/首</strong></td><td>免费用完后，按次扣费</td><td>管理员在「用户管理」充值</td></tr>
-                <tr><td><strong style="color:#00d9ff">年卡解锁码</strong></td><td>输入后1年内无限生成</td><td>在「解锁码」tab生成</td></tr>
-                <tr><td><strong style="color:#ff6b6b">免费名单</strong></td><td>永不扣费，无限生成</td><td>在「免费名单」tab添加</td></tr>
+                <tr><td><strong style="color:#00ff88">免费5次</strong></td><td>新用户首次使用输入昵称后自动获得5次免费</td><td>无需操作</td></tr>
+                <tr><td><strong style="color:#ffd700">¥0.8/首</strong></td><td>免费用完后，按次扣费</td><td>在「用户管理」按昵称充值</td></tr>
+                <tr><td><strong style="color:#00d9ff">年卡解锁码</strong></td><td>用户输入后1年内无限生成</td><td>在「解锁码」tab生成</td></tr>
+                <tr><td><strong style="color:#ff6b6b">VIP免费名单</strong></td><td>永不扣费，无限生成</td><td>在「VIP名单」tab按昵称添加</td></tr>
             </table>
+        </div>
+        <div class="card">
+            <div class="card-title">用户管理说明</div>
+            <p style="color:#888;font-size:13px;line-height:1.8">
+                - 用户首次打开H5时需要输入昵称<br>
+                - 昵称与设备自动绑定，后台按昵称管理<br>
+                - 同一昵称在不同设备登录会共享VIP状态<br>
+                - 充值时输入用户昵称即可
+            </p>
         </div>
     </div>
 </div>
@@ -204,7 +209,6 @@ function switchTab(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
     event.target.classList.add('active');
-    // 按需加载
     if (name === 'freeList') loadFreeList();
     if (name === 'codes') loadCodes();
     if (name === 'users') loadUsers();
@@ -227,7 +231,7 @@ async function loadStats() {
     } catch(e) { console.error('loadStats error', e); }
 }
 
-// ===== 免费名单 =====
+// ===== VIP免费名单 =====
 async function loadFreeList() {
     try {
         const json = await api('/api/admin/free-list');
@@ -237,11 +241,11 @@ async function loadFreeList() {
             json.data.forEach(function(item) {
                 var div = document.createElement('div');
                 div.className = 'free-item';
-                div.innerHTML = '<div><div class="free-name">' + escHtml(item.name || item.deviceId) + '</div><div class="free-id">' + escHtml(item.deviceId) + '</div><div class="free-date">添加于 ' + new Date(item.addedAt).toLocaleDateString('zh-CN') + '</div></div><button class="btn btn-sm btn-danger" onclick="removeFreeUser(\'' + escAttr(item.deviceId) + '\')">移除</button>';
+                div.innerHTML = '<div><div class="free-name">' + escHtml(item.nickname || item.name || '未命名') + '</div><div class="free-date">添加于 ' + new Date(item.addedAt).toLocaleDateString('zh-CN') + '</div></div><button class="btn btn-sm btn-danger" onclick="removeFreeUser(\'' + escAttr(item.nickname || item.name) + '\')">移除</button>';
                 listEl.appendChild(div);
             });
         } else {
-            listEl.innerHTML = '<div class="empty-hint">暂无免费用户</div>';
+            listEl.innerHTML = '<div class="empty-hint">暂无VIP用户，添加昵称即可开通免费权限</div>';
         }
     } catch(e) {
         document.getElementById('freeList').innerHTML = '<div class="empty-hint">加载失败</div>';
@@ -249,21 +253,19 @@ async function loadFreeList() {
 }
 
 async function addFreeUser() {
-    var deviceId = document.getElementById('freeDeviceId').value.trim();
-    var name = document.getElementById('freeName').value.trim();
+    var nickname = document.getElementById('freeNickname').value.trim();
     var alertEl = document.getElementById('alertFree');
-    if (!deviceId) { alertEl.textContent = '请输入设备ID'; alertEl.className = 'alert show error'; return; }
+    if (!nickname) { alertEl.textContent = '请输入用户昵称'; alertEl.className = 'alert show error'; return; }
 
     try {
         var json = await api('/api/admin/free-add', {
             method: 'POST',
-            body: JSON.stringify({ device_id: deviceId, name: name || deviceId })
+            body: JSON.stringify({ nickname: nickname })
         });
         if (json.success) {
-            alertEl.textContent = '已添加「' + (name || deviceId) + '」到免费名单';
+            alertEl.textContent = '已将「' + nickname + '」加入VIP免费名单';
             alertEl.className = 'alert show success';
-            document.getElementById('freeDeviceId').value = '';
-            document.getElementById('freeName').value = '';
+            document.getElementById('freeNickname').value = '';
             loadFreeList();
             loadStats();
         } else {
@@ -276,12 +278,12 @@ async function addFreeUser() {
     }
 }
 
-async function removeFreeUser(deviceId) {
-    if (!confirm('确定要将此用户从免费名单移除吗？')) return;
+async function removeFreeUser(nickname) {
+    if (!confirm('确定要将「' + nickname + '」从VIP名单移除吗？')) return;
     try {
         var json = await api('/api/admin/free-remove', {
             method: 'POST',
-            body: JSON.stringify({ device_id: deviceId })
+            body: JSON.stringify({ nickname: nickname })
         });
         if (json.success) {
             loadFreeList();
@@ -356,7 +358,6 @@ async function loadUsers() {
         var tbody = document.getElementById('userTable');
         if (json.success && json.data.length > 0) {
             tbody.innerHTML = '';
-            // 按余额和生成次数排序
             json.data.sort(function(a, b) { return (b.freeUsed + b.balance) - (a.freeUsed + a.balance); });
             json.data.forEach(function(u) {
                 var tr = document.createElement('tr');
@@ -365,7 +366,9 @@ async function loadUsers() {
                 if (u.balance > 0) statusHtml += '<span style="color:#ffd700">¥' + u.balance.toFixed(2) + '</span>';
                 if (!statusHtml) statusHtml = '<span style="color:#555">-</span>';
 
-                tr.innerHTML = '<td class="id-text" title="' + escAttr(u.deviceId) + '">' + escHtml(u.deviceId) + '</td><td>' + u.freeUsed + '次</td><td style="color:' + (u.balance > 0 ? '#ffd700' : '#666') + '">¥' + (u.balance || 0).toFixed(2) + '</td><td>' + statusHtml + '</td><td><button class="btn btn-sm btn-warning" onclick="rechargeUser(\'' + escAttr(u.deviceId) + '\')">充值</button></td>';
+                var nicknameDisplay = u.nickname !== '(未设置)' ? u.nickname : '<span style="color:#555">未设置昵称</span>';
+
+                tr.innerHTML = '<td><div class="user-nickname">' + nicknameDisplay + '</div><div class="user-device">' + escHtml(u.deviceId.substring(0, 20)) + '...</div></td><td>' + u.freeUsed + '次</td><td style="color:' + (u.balance > 0 ? '#ffd700' : '#666') + '">¥' + (u.balance || 0).toFixed(2) + '</td><td>' + statusHtml + '</td><td><button class="btn btn-sm btn-warning" onclick="rechargeUser(\'' + escAttr(u.nickname !== '(未设置)' ? u.nickname : u.deviceId) + '\')">充值</button></td>';
                 tbody.appendChild(tr);
             });
         } else {
@@ -376,14 +379,14 @@ async function loadUsers() {
     }
 }
 
-async function rechargeUser(deviceId) {
-    var amount = prompt('为 ' + deviceId.substring(0, 16) + '...\n\n请输入充值金额（元）：\n每首 ¥0.8，建议充值 4、8、16 元等', '8');
+async function rechargeUser(nickname) {
+    var amount = prompt('为「' + nickname + '」充值\n\n请输入充值金额（元）：\n每首 ¥0.8，建议充值 4、8、16 元等', '8');
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) return;
 
     try {
         var json = await api('/api/admin/recharge', {
             method: 'POST',
-            body: JSON.stringify({ device_id: deviceId, amount: parseFloat(amount) })
+            body: JSON.stringify({ nickname: nickname, amount: parseFloat(amount) })
         });
         if (json.success) {
             alert('充值成功！当前余额：¥' + json.data.balance.toFixed(2));
