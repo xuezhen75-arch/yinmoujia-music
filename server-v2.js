@@ -87,7 +87,7 @@ app.post('/api/unlock', (req, res) => {
  * Body: { device_id, mood, scene, style, keyword }
  */
 app.post('/api/generate', async (req, res) => {
-    const { device_id, mood, scene, style, keyword } = req.body;
+    const { device_id, mood, scene, style, keyword, lyrics } = req.body;
 
     if (!device_id || !mood || !scene || !style) {
         return res.status(400).json({ success: false, error: '缺少必要参数' });
@@ -129,7 +129,7 @@ app.post('/api/generate', async (req, res) => {
 
         console.log('⏳ 正在调用 suno-api.io...');
 
-        const result = await musicAPI.generateMusic({ mood, scene, style, keyword });
+        const result = await musicAPI.generateMusic({ mood, scene, style, keyword, lyrics });
 
         if (!result.success) {
             return res.status(500).json({
@@ -149,6 +149,7 @@ app.post('/api/generate', async (req, res) => {
                 title: result.title,
                 audio_url: result.audioUrl,
                 image_url: result.imageUrl,
+                lyrics: result.lyrics || '',
                 remaining: updatedQuota.remaining,
                 message: updatedQuota.remaining > 0
                     ? `🎵 生成成功！还剩 ${updatedQuota.remaining} 次免费机会`

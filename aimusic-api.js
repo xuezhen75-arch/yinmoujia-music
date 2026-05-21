@@ -21,8 +21,8 @@ class AIMusicAPI {
      * 生成音乐
      * 使用 OpenAI 兼容接口，直接返回完整结果（同步等待）
      */
-    async generateMusic({ mood, scene, style, keyword }) {
-        const { prompt } = this.buildPrompt({ mood, scene, style, keyword });
+    async generateMusic({ mood, scene, style, keyword, lyrics }) {
+        const { prompt } = this.buildPrompt({ mood, scene, style, keyword, lyrics });
 
         try {
             const response = await axios.post(
@@ -144,7 +144,7 @@ class AIMusicAPI {
     /**
      * 构建提示词
      */
-    buildPrompt({ mood, scene, style, keyword }) {
+    buildPrompt({ mood, scene, style, keyword, lyrics }) {
         const moodMap = {
             happy: {
                 prompt: 'A happy and uplifting song about joy and good times',
@@ -232,7 +232,14 @@ class AIMusicAPI {
         const styleDesc = styleMap[style] ? `, ${styleMap[style]}` : ', modern pop';
         const keywordDesc = keyword && keywordMap[keyword] ? `, ${keywordMap[keyword]}` : '';
 
-        const prompt = `${moodData.prompt}${sceneDesc}${styleDesc}${keywordDesc}`;
+        let prompt;
+        if (lyrics && lyrics.trim()) {
+            // 用户提供了自定义歌词，格式：歌词 + 风格标签
+            prompt = `${lyrics.trim()}\n\n[Style: ${moodData.tags}${styleDesc}]`;
+        } else {
+            // AI 自动生成歌词
+            prompt = `${moodData.prompt}${sceneDesc}${styleDesc}${keywordDesc}`;
+        }
 
         return { prompt, tags: moodData.tags };
     }

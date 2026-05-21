@@ -450,6 +450,85 @@
         /* 底部 */
         .footer { text-align: center; padding: 24px 0; color: #444; font-size: 11px; }
 
+        /* 歌词区域 */
+        .lyrics-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .lyrics-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .lyrics-tab {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .lyrics-tab:active { transform: scale(0.97); }
+
+        .lyrics-tab.active {
+            background: rgba(0,217,255,0.15);
+            border-color: #00d9ff;
+            color: #fff;
+        }
+
+        .lyrics-ai-hint {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            padding: 10px;
+            line-height: 1.6;
+        }
+
+        .lyrics-input {
+            width: 100%;
+            min-height: 130px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            padding: 12px;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.7;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .lyrics-input:focus { outline: none; border-color: #00d9ff; }
+        .lyrics-input::placeholder { color: #444; }
+
+        /* 歌词展示 */
+        .lyrics-display {
+            background: rgba(255,255,255,0.05);
+            border-radius: 14px;
+            padding: 16px;
+            margin: 14px 0;
+            max-height: 220px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.8;
+            font-size: 14px;
+            color: #ccc;
+            text-align: center;
+        }
+
+        .lyrics-display::-webkit-scrollbar { width: 4px; }
+        .lyrics-display::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
         /* 首次提示 */
         .first-tip {
             background: rgba(0,217,255,0.08);
@@ -573,6 +652,35 @@
         </div>
     </div>
 
+    <!-- 歌词（可选） -->
+    <div class="step">
+        <div class="step-header">
+            <span class="step-num">5</span>
+            <span class="step-title">填入歌词（可选）</span>
+        </div>
+        <div class="lyrics-section">
+            <div class="lyrics-tabs">
+                <div class="lyrics-tab active" id="tabAi" onclick="switchLyricsMode('ai')">AI 自动写词</div>
+                <div class="lyrics-tab" id="tabCustom" onclick="switchLyricsMode('custom')">自己写歌词</div>
+            </div>
+            <div class="lyrics-ai-mode" id="lyricsAiMode">
+                <div class="lyrics-ai-hint">AI 将根据你的心情和风格自动生成歌词</div>
+            </div>
+            <div class="lyrics-custom-mode" id="lyricsCustomMode" style="display:none">
+                <textarea class="lyrics-input" id="lyricsInput" placeholder="在这里写下你的歌词...
+
+例如：
+[Verse 1]
+清晨的第一缕阳光
+照亮了我的梦想
+
+[Chorus]
+追逐光芒的脚步
+永不停歇"></textarea>
+            </div>
+        </div>
+    </div>
+
     <!-- 已选 -->
     <div class="selected-summary" id="selectedSummary"></div>
 
@@ -609,6 +717,9 @@
         <div class="music-artist">by 音谋加 × 大树音乐</div>
 
         <div class="remaining-tip" id="remainingTip"></div>
+
+        <!-- 歌词展示 -->
+        <div class="lyrics-display" id="lyricsDisplay" style="display:none"></div>
 
         <div class="player-card">
             <div class="player-progress" onclick="seekAudio(event)">
@@ -802,6 +913,25 @@ function updateButton() {
     btn.disabled = !ready;
 }
 
+// ============ 歌词 ============
+function switchLyricsMode(mode) {
+    const tabAi = document.getElementById('tabAi');
+    const tabCustom = document.getElementById('tabCustom');
+    const aiMode = document.getElementById('lyricsAiMode');
+    const customMode = document.getElementById('lyricsCustomMode');
+    if (mode === 'ai') {
+        tabAi.classList.add('active');
+        tabCustom.classList.remove('active');
+        aiMode.style.display = 'block';
+        customMode.style.display = 'none';
+    } else {
+        tabAi.classList.remove('active');
+        tabCustom.classList.add('active');
+        aiMode.style.display = 'none';
+        customMode.style.display = 'block';
+    }
+}
+
 // ============ 解锁码 ============
 function openUnlockModal() {
     document.getElementById('unlockModal').classList.add('active');
@@ -881,7 +1011,8 @@ async function generateMusic() {
                 mood: state.mood,
                 scene: state.scene,
                 style: state.style,
-                keyword: state.keyword
+                keyword: state.keyword,
+                lyrics: document.getElementById('lyricsInput').value.trim() || ''
             }),
             signal: AbortSignal.timeout(200000)
         });
@@ -919,6 +1050,15 @@ function showResult(data) {
     document.getElementById('resultPage').classList.add('active');
 
     document.getElementById('musicTitle').textContent = data.title || '专属音乐';
+
+    // 歌词展示
+    const lyricsEl = document.getElementById('lyricsDisplay');
+    if (data.lyrics) {
+        lyricsEl.textContent = data.lyrics;
+        lyricsEl.style.display = 'block';
+    } else {
+        lyricsEl.style.display = 'none';
+    }
 
     // 剩余提示
     const tipEl = document.getElementById('remainingTip');
