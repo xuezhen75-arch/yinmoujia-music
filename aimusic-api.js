@@ -185,22 +185,40 @@ class AIMusicAPI {
                 if (queryRes.data.code === 0 && queryRes.data.data) {
                     const data = queryRes.data.data;
 
-                    // 如果返回了歌曲数据
-                    if (data.status === 'completed' || data.audioUrl || data.mp3Url) {
+                    // 豆源API: data.status 为数字 (如20=处理中, 30=完成)
+                    // data.list 数组包含歌曲，每首歌有 state/progress 字段
+                    // state: "queued" -> "streaming" -> "complete"
+                    const isAllDone = data.list && data.list.length > 0 && data.list.every(s => s.state === 'complete' || s.state === 'completed');
+
+                    if (isAllDone) {
                         const songs = this.parseSongs(data, taskId);
                         console.log('任务完成！获得', songs.length, '首歌');
                         return { success: true, songs };
                     }
 
+                    // 如果有歌曲数据但有音频URL，也视为可用（streaming状态但有audioUrl）
+                    if (data.list && data.list.some(s => s.audioUrl)) {
+                        const songs = this.parseSongs(data, taskId);
+                        if (songs.some(s => s.audioUrl)) {
+                            console.log('部分歌曲已有音频，提前返回', songs.length, '首');
+                            return { success: true, songs };
+                        }
+                    }
+
                     // 如果失败了
-                    if (data.status === 'failed' || data.error) {
-                        return { success: false, error: data.error || '生成失败' };
+                    if (data.list && data.list.some(s => s.state === 'failed' || s.state === 'error')) {
+                        return { success: false, error: '部分歌曲生成失败' };
+                    }
+
+                    // 还在处理中，打印进度
+                    if (data.list) {
+                        const progressInfo = data.list.map(s => `${s.progress || '?'}`).join(', ');
+                        console.log(`处理中: [${progressInfo}]`);
                     }
                 }
 
-                // code不为0但也不是错误（可能还在处理中）
+                // code不为0
                 if (queryRes.data.code !== 0) {
-                    // 某些code表示还在处理，继续轮询
                     console.log(`状态码 ${queryRes.data.code}: ${queryRes.data.msg || '处理中...'}`);
                 }
 
@@ -215,13 +233,28 @@ class AIMusicAPI {
 
     /**
      * 解析歌曲数据
-     * 豆源API可能返回多种格式，这里做兼容处理
+     * 豆源API返回格式: data.list 数组
+     * 每首歌: { title, audioUrl, coverUrl, lyric, style, state, progress, clipId }
      */
     parseSongs(data, taskId) {
         const songs = [];
 
-        // 格式1: data.songs 数组
-        if (data.songs && Array.isArray(data.songs)) {
+        // 豆源标准格式: data.list 数组
+        if (data.list && Array.isArray(data.list)) {
+            for (const s of data.list) {
+                if (!s.audioUrl) continue; // 跳过没有音频的
+                songs.push({
+                    title: s.title || 'Untitled',
+                    audioUrl: s.audioUrl || '',
+                    imageUrl: s.coverUrl || '',
+                    lyrics: s.lyric || '',
+                    taskId: taskId
+                });
+            }
+        }
+
+        // 兼容格式1: data.songs 数组
+        if (songs.length === 0 && data.songs && Array.isArray(data.songs)) {
             for (const s of data.songs) {
                 songs.push({
                     title: s.title || 'Untitled',
@@ -233,7 +266,7 @@ class AIMusicAPI {
             }
         }
 
-        // 格式2: data直接包含歌曲信息
+        // 兼容格式2: data直接包含歌曲信息
         if (songs.length === 0 && (data.audioUrl || data.mp3Url)) {
             songs.push({
                 title: data.title || 'Untitled',
@@ -242,34 +275,6 @@ class AIMusicAPI {
                 lyrics: data.lyrics || data.lyric || '',
                 taskId: taskId
             });
-        }
-
-        // 格式3: data.music 或 data.musics 数组
-        if (songs.length === 0 && data.music) {
-            const musicArr = Array.isArray(data.music) ? data.music : [data.music];
-            for (const m of musicArr) {
-                songs.push({
-                    title: m.title || 'Untitled',
-                    audioUrl: m.audioUrl || m.mp3Url || m.url || '',
-                    imageUrl: m.imageUrl || m.coverUrl || m.image || '',
-                    lyrics: m.lyrics || m.lyric || '',
-                    taskId: taskId
-                });
-            }
-        }
-
-        // 格式4: data.result 嵌套
-        if (songs.length === 0 && data.result) {
-            const r = data.result;
-            if (r.audioUrl || r.mp3Url) {
-                songs.push({
-                    title: r.title || 'Untitled',
-                    audioUrl: r.audioUrl || r.mp3Url || '',
-                    imageUrl: r.imageUrl || r.coverUrl || '',
-                    lyrics: r.lyrics || r.lyric || '',
-                    taskId: taskId
-                });
-            }
         }
 
         return songs;
