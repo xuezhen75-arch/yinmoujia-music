@@ -966,9 +966,9 @@ function shareMusic() {
     };
 
     if (navigator.share) {
-        navigator.share(shareData).catch(() => fallbackCopy(shareData.text + '\n' + shareUrl));
+        navigator.share(shareData).catch(() => fallbackCopy(shareData.text + '\n' + shareData.url));
     } else {
-        fallbackCopy(shareData.text + '\n' + shareUrl);
+        fallbackCopy(shareData.text + '\n' + shareData.url);
     }
 }
 
