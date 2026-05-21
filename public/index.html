@@ -689,6 +689,10 @@ async function generateMusic() {
             lyrics: state.lyricsMode === 'custom' ? (document.getElementById('lyricsInput').value.trim() || '') : ''
         };
 
+        console.log('=== 生成请求 ===');
+        console.log('模式:', state.lyricsMode);
+        console.log('参数:', JSON.stringify(bodyData, null, 2));
+
         const res = await fetch(`${API_BASE}/api/generate`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(bodyData),
@@ -698,12 +702,25 @@ async function generateMusic() {
         const json = await res.json();
         clearInterval(percentTimer);
 
+        console.log('=== 生成响应 ===');
+        console.log('HTTP状态:', res.status);
+        console.log('响应:', JSON.stringify(json).substring(0, 1000));
+
         if (json.needPayment) {
             overlay.classList.remove('active');
             showToast('⚠️ ' + json.data.message, 'warn');
             openUnlockModal(); return;
         }
         if (!json.success) throw new Error(json.error || '生成失败');
+
+        // 校验歌曲数据
+        const songs = json.data?.songs || [];
+        console.log('歌曲数量:', songs.length);
+        if (songs.length === 0) {
+            throw new Error('服务器返回成功但无歌曲数据，请重试');
+        }
+        const validSongs = songs.filter(s => s && s.audioUrl);
+        console.log('有效歌曲:', validSongs.length);
 
         document.getElementById('loadingText').textContent = '创作完成！';
         percentEl.textContent = '100%';
@@ -714,8 +731,9 @@ async function generateMusic() {
     } catch (e) {
         clearInterval(percentTimer);
         overlay.classList.remove('active');
-        if (e.name === 'TimeoutError') showToast('⏱️ 请求超时，请稍后再试', 'error');
-        else showToast('❌ 生成失败：' + e.message, 'error');
+        console.error('=== 生成错误 ===', e);
+        if (e.name === 'TimeoutError') showToast('⏱️ 请求超时(3分钟)，Suno可能繁忙，请稍后再试', 'error');
+        else showToast('❌ ' + e.message, 'error');
     }
 }
 
