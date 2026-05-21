@@ -220,6 +220,15 @@
         .song-item-btn.primary { background: linear-gradient(90deg, #00d9ff, #00ff88); color: #1a1a2e; font-weight: bold; }
         .songs-empty { text-align: center; padding: 60px 20px; color: #555; font-size: 14px; }
         .songs-empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+        /* 客服二维码区域 */
+        .kefu-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px 20px; margin: 0 20px 16px; display: flex; align-items: center; gap: 16px; }
+        .kefu-qr { width: 72px; height: 72px; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: #fff; }
+        .kefu-qr img { width: 100%; height: 100%; object-fit: cover; }
+        .kefu-info { flex: 1; }
+        .kefu-title { font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 6px; }
+        .kefu-desc { font-size: 12px; color: #888; line-height: 1.7; }
+        .kefu-desc span { display: inline-block; background: rgba(0,217,255,0.1); color: #00d9ff; padding: 1px 6px; border-radius: 4px; margin-right: 4px; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -452,9 +461,21 @@
         </div>
         <div class="pay-card-desc">
             免费次数用完后可继续使用<br>
-            联系大树音乐充值，或输入管理员发放的解锁码
+            联系音谋加客服充值，或输入管理员发放的解锁码
         </div>
         <button class="pay-card-btn" onclick="showUnlockFromProfile()">🔑 输入解锁码</button>
+    </div>
+
+    <!-- 客服二维码 -->
+    <div class="kefu-card">
+        <div class="kefu-qr"><img src="kefu.png" alt="音谋加客服" onerror="this.parentElement.innerHTML='📱'"></div>
+        <div class="kefu-info">
+            <div class="kefu-title">📱 音谋加客服微信</div>
+            <div class="kefu-desc">
+                <span>充值</span><span>购伴奏</span><span>编曲</span><span>录音</span><br>
+                扫码添加，获取更多音乐服务
+            </div>
+        </div>
     </div>
 
     <div class="songs-list-title" id="songsListTitle">我的作品</div>
@@ -1045,7 +1066,7 @@ let mySongsData = [];
 
 async function showProfile() {
     document.getElementById('profilePage').classList.add('active');
-    document.getElementById('profileNickname').textContent = state.nickname ? `${state.nickname} <small>创作人</small>` : '匿名用户';
+    document.getElementById('profileNickname').innerHTML = state.nickname ? `${escHtml(state.nickname)} <small>创作人</small>` : '匿名用户';
 
     // 配额信息
     const statsEl = document.getElementById('profileStats');
@@ -1299,6 +1320,7 @@ function showToast(msg, type = '') {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function escAttr(s) { return (s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 </script>
 </body>
 </html>
