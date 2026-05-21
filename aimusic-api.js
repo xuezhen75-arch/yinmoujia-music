@@ -174,8 +174,8 @@ class AIMusicAPI {
 
             try {
                 const queryRes = await axios.post(
-                    `${API_BASE}/generate`,
-                    { action: 'query', id: taskId },
+                    `${API_BASE}/query`,
+                    { id: String(taskId) },
                     { headers: this.getHeaders(), timeout: 15000 }
                 );
 
