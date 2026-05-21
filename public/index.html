@@ -661,21 +661,21 @@ async function generateMusic() {
     const overlay = document.getElementById('loadingOverlay');
     const bar = document.getElementById('loadingBar');
     const percentEl = document.getElementById('loadingPercent');
-    document.getElementById('loadingText').textContent = 'AI 正在创作';
+    const loadingText = document.getElementById('loadingText');
+    loadingText.textContent = 'AI 正在创作中...';
     overlay.classList.add('active');
     percentEl.textContent = '0%';
-    // 先显示 overlay，再启动进度条动画
+    // 异步轮询模式：进度条缓慢前进，最多到90%，完成后跳到100%
     requestAnimationFrame(() => {
         bar.style.animation = 'none';
         bar.offsetHeight; // trigger reflow
-        bar.style.animation = 'progress 120s linear forwards';
+        bar.style.animation = 'progress 300s linear forwards';
     });
-    // 更新百分比
+    // 更新百分比（5分钟超时）
     let percentTimer = setInterval(() => {
         if (!overlay.classList.contains('active')) { clearInterval(percentTimer); return; }
-        // 模拟进度：前30秒较快，后面放缓
         const elapsed = Date.now() - startTime;
-        let pct = Math.min(90, Math.floor((elapsed / 120000) * 90));
+        let pct = Math.min(90, Math.floor((elapsed / 300000) * 90));
         percentEl.textContent = pct + '%';
     }, 1000);
     const startTime = Date.now();
@@ -696,7 +696,7 @@ async function generateMusic() {
         const res = await fetch(`${API_BASE}/api/generate`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(bodyData),
-            signal: AbortSignal.timeout(200000)
+            signal: AbortSignal.timeout(360000) // 6分钟超时（异步轮询需要更长时间）
         });
 
         const json = await res.json();
@@ -732,7 +732,7 @@ async function generateMusic() {
         clearInterval(percentTimer);
         overlay.classList.remove('active');
         console.error('=== 生成错误 ===', e);
-        if (e.name === 'TimeoutError') showToast('⏱️ 请求超时(3分钟)，Suno可能繁忙，请稍后再试', 'error');
+        if (e.name === 'TimeoutError') showToast('⏱️ 请求超时(6分钟)，Suno生成队列繁忙，请稍后再试', 'error');
         else showToast('❌ ' + e.message, 'error');
     }
 }

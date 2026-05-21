@@ -15,7 +15,10 @@ const db = require('./database-simple');
 // ============ 配置 ============
 const PORT = process.env.PORT || 3000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'yinmoujia-admin-2024';
-const API_KEY = process.env.AI_MUSIC_API_KEY || '';
+
+// 豆源SUNO API 认证
+const SUNO_API_ID = process.env.SUNO_API_ID || '';
+const SUNO_API_TOKEN = process.env.SUNO_API_TOKEN || '';
 
 // 动态获取站点URL（支持反向代理）
 function getSiteUrl(req) {
@@ -25,8 +28,8 @@ function getSiteUrl(req) {
     return `${proto}://${host}`;
 }
 
-let config = { apiKey: API_KEY };
-const musicAPI = new AIMusicAPI(API_KEY);
+let config = { apiId: SUNO_API_ID, apiToken: SUNO_API_TOKEN };
+const musicAPI = new AIMusicAPI(SUNO_API_ID, SUNO_API_TOKEN);
 
 // ============ 初始化 ============
 const app = express();
@@ -172,14 +175,14 @@ app.post('/api/generate', async (req, res) => {
     console.log('剩余免费次数:', updatedQuota.remaining);
 
     try {
-        if (!config.apiKey) {
+        if (!config.apiId || !config.apiToken) {
             return res.status(500).json({
                 success: false,
-                error: '服务器API Key未配置'
+                error: '服务器豆源SUNO API未配置（缺少SUNO_API_ID或SUNO_API_TOKEN）'
             });
         }
 
-        console.log('正在调用 suno-api.io...');
+        console.log('正在调用 豆源SUNO API...');
 
         const result = await musicAPI.generateMusic({ mood, scene, style, keyword, lyrics, instrumental });
 
