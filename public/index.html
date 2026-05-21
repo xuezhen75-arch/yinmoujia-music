@@ -671,16 +671,43 @@ async function generateMusic() {
     const bar = document.getElementById('loadingBar');
     const percentEl = document.getElementById('loadingPercent');
     const loadingText = document.getElementById('loadingText');
-    loadingText.textContent = 'AI 正在创作中...';
+
+    // 第1步：预检服务器连通性（3秒超时）
+    loadingText.textContent = '正在连接服务器...';
     overlay.classList.add('active');
     percentEl.textContent = '0%';
-    // 异步轮询模式：进度条缓慢前进，最多到90%，完成后跳到100%
+    try {
+        const healthRes = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(5000) });
+        if (!healthRes.ok) throw new Error('服务器异常');
+    } catch (e) {
+        overlay.classList.remove('active');
+        showToast('服务器维护中，请稍后再试', 'error');
+        return;
+    }
+
+    // 第2步：预检查配额
+    loadingText.textContent = '正在检查配额...';
+    try {
+        const quotaRes = await fetch(`${API_BASE}/api/quota?device_id=${state.deviceId}&nickname=${encodeURIComponent(state.nickname)}`, { signal: AbortSignal.timeout(5000) });
+        const quotaJson = await quotaRes.json();
+        if (quotaJson.success && quotaJson.data && quotaJson.data.remaining <= 0 && !quotaJson.data.unlocked && quotaJson.data.balance < 0.8) {
+            overlay.classList.remove('active');
+            showToast('生成次数已用完', 'warn');
+            openUnlockModal();
+            return;
+        }
+    } catch (e) {
+        // 配额检查失败不阻断，继续尝试生成
+    }
+
+    // 第3步：正式开始生成
+    loadingText.textContent = 'AI 正在创作中...';
+    percentEl.textContent = '0%';
     requestAnimationFrame(() => {
         bar.style.animation = 'none';
-        bar.offsetHeight; // trigger reflow
+        bar.offsetHeight;
         bar.style.animation = 'progress 300s linear forwards';
     });
-    // 更新百分比（5分钟超时）
     let percentTimer = setInterval(() => {
         if (!overlay.classList.contains('active')) { clearInterval(percentTimer); return; }
         const elapsed = Date.now() - startTime;
@@ -706,7 +733,7 @@ async function generateMusic() {
         const res = await fetch(`${API_BASE}/api/generate`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(bodyData),
-            signal: AbortSignal.timeout(360000) // 6分钟超时（异步轮询需要更长时间）
+            signal: AbortSignal.timeout(360000)
         });
 
         const json = await res.json();
@@ -723,7 +750,6 @@ async function generateMusic() {
         }
         if (!json.success) throw new Error(json.error || '生成失败');
 
-        // 校验歌曲数据
         const songs = json.data?.songs || [];
         console.log('歌曲数量:', songs.length);
         if (songs.length === 0) {
@@ -742,8 +768,8 @@ async function generateMusic() {
         clearInterval(percentTimer);
         overlay.classList.remove('active');
         console.error('=== 生成错误 ===', e);
-        if (e.name === 'TimeoutError') showToast('⏱️ 请求超时(6分钟)，Suno生成队列繁忙，请稍后再试', 'error');
-        else showToast('❌ ' + e.message, 'error');
+        const errMsg = e.name === 'TimeoutError' ? '请求超时，Suno生成队列繁忙，请稍后再试' : (e.message || '网络错误，请检查网络后重试');
+        showToast('❌ ' + errMsg, 'error');
     }
 }
 
