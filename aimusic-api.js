@@ -46,7 +46,7 @@ class AIMusicAPI {
      *   - instrumental: true=纯乐器, false=有人声
      * @returns {Promise<{success, songs: [{title, audioUrl, imageUrl, lyrics, taskId}], error}>}
      */
-    async generateMusic({ mood, scene, style, keyword, lyrics, instrumental }) {
+    async generateMusic({ mood, scene, style, keyword, lyrics, instrumental, aiDescription }) {
         const hasCustomLyrics = lyrics && lyrics.trim().length > 0;
         const isInstrumental = !!instrumental;
 
@@ -55,7 +55,7 @@ class AIMusicAPI {
         console.log('情绪:', mood, '| 场景:', scene, '| 风格:', style);
 
         // 构建请求体
-        const body = this.buildRequestBody({ mood, scene, style, keyword, lyrics, instrumental });
+        const body = this.buildRequestBody({ mood, scene, style, keyword, lyrics, instrumental, aiDescription });
         console.log('请求体:', JSON.stringify(body, null, 2));
 
         try {
@@ -99,7 +99,7 @@ class AIMusicAPI {
     /**
      * 构建请求体
      */
-    buildRequestBody({ mood, scene, style, keyword, lyrics, instrumental }) {
+    buildRequestBody({ mood, scene, style, keyword, lyrics, instrumental, aiDescription }) {
         const hasCustomLyrics = lyrics && lyrics.trim().length > 0;
         const isInstrumental = !!instrumental;
 
@@ -143,12 +143,17 @@ class AIMusicAPI {
             };
         } else {
             // AI写词模式 (灵感模式)
+            let idea = `Create a ${moodDesc} song ${sceneDesc}${styleDesc}${keywordDesc}. With vocals and original lyrics.`;
+            // 如果用户提供了歌曲描述，追加到idea中
+            if (aiDescription && aiDescription.trim()) {
+                idea += ` Theme: ${aiDescription.trim()}`;
+            }
             return {
                 action: 'generate',
                 makeInstrumental: 0,
                 mvVersion: 'chirp-crow',
                 inputType: 10,
-                idea: `Create a ${moodDesc} song ${sceneDesc}${styleDesc}${keywordDesc}. With vocals and original lyrics.`,
+                idea: idea,
                 style: style || 'pop'
             };
         }

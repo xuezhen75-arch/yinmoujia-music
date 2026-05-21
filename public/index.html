@@ -281,7 +281,16 @@
                 <div class="lyrics-tab" id="tabCustom" onclick="switchLyricsMode('custom')">自己写</div>
                 <div class="lyrics-tab" id="tabInstrumental" onclick="switchLyricsMode('instrumental')">纯乐器</div>
             </div>
-            <div class="lyrics-ai-mode" id="lyricsAiMode"><div class="lyrics-ai-hint">AI 将根据你的心情和风格自动生成歌词</div></div>
+            <div class="lyrics-ai-mode" id="lyricsAiMode">
+                <div class="lyrics-ai-hint" style="margin-bottom:8px">AI 将根据你的心情和风格自动生成歌词</div>
+                <textarea class="lyrics-input" id="lyricsAiDesc" placeholder="描述你想要的歌曲主题、情感或故事（可选）...
+
+例如：
+- 关于初恋的甜蜜回忆
+- 职场奋斗不放弃的励志故事
+- 深夜独自开车时的孤独感
+- 给妈妈的生日祝福歌"></textarea>
+            </div>
             <div class="lyrics-custom-mode" id="lyricsCustomMode" style="display:none">
                 <textarea class="lyrics-input" id="lyricsInput" placeholder="在这里写下你的歌词...
 
@@ -686,7 +695,8 @@ async function generateMusic() {
             nickname: state.nickname,
             mood: state.mood, scene: state.scene, style: state.style, keyword: state.keyword,
             instrumental: state.lyricsMode === 'instrumental',
-            lyrics: state.lyricsMode === 'custom' ? (document.getElementById('lyricsInput').value.trim() || '') : ''
+            lyrics: state.lyricsMode === 'custom' ? (document.getElementById('lyricsInput').value.trim() || '') : '',
+            aiDescription: state.lyricsMode === 'ai' ? (document.getElementById('lyricsAiDesc').value.trim() || '') : ''
         };
 
         console.log('=== 生成请求 ===');

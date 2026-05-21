@@ -123,7 +123,7 @@ app.post('/api/unlock', (req, res) => {
  * Body: { device_id, nickname, mood, scene, style, keyword, lyrics, instrumental }
  */
 app.post('/api/generate', async (req, res) => {
-    const { device_id, nickname, mood, scene, style, keyword, lyrics, instrumental } = req.body;
+    const { device_id, nickname, mood, scene, style, keyword, lyrics, instrumental, aiDescription } = req.body;
 
     if (!device_id || !mood || !scene || !style) {
         return res.status(400).json({ success: false, error: '缺少必要参数' });
@@ -184,7 +184,7 @@ app.post('/api/generate', async (req, res) => {
 
         console.log('正在调用 豆源SUNO API...');
 
-        const result = await musicAPI.generateMusic({ mood, scene, style, keyword, lyrics, instrumental });
+        const result = await musicAPI.generateMusic({ mood, scene, style, keyword, lyrics, instrumental, aiDescription });
 
         if (!result.success) {
             return res.status(500).json({
