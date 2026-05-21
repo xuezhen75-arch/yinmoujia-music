@@ -391,6 +391,38 @@ app.post('/api/admin/recharge', (req, res) => {
 });
 
 /**
+ * 获取用户生成历史（我的作品）
+ * GET /api/my-songs?device_id=xxx
+ */
+app.get('/api/my-songs', (req, res) => {
+    try {
+        const deviceId = req.query.device_id;
+        if (!deviceId) return res.status(400).json({ success: false, error: '缺少 device_id' });
+
+        const records = db.getSharesByDeviceId(deviceId);
+        // 返回精简数据（不含大字段优化传输）
+        const data = records.map(r => ({
+            id: r.id,
+            createdAt: r.createdAt,
+            mood: r.mood,
+            scene: r.scene,
+            style: r.style,
+            instrumental: r.instrumental,
+            nickname: r.nickname,
+            songs: (r.songs || []).map(s => ({
+                title: s.title,
+                audioUrl: s.audioUrl,
+                imageUrl: s.imageUrl,
+                lyrics: s.lyrics || ''
+            }))
+        }));
+        res.json({ success: true, data });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+/**
  * 健康检查
  */
 app.get('/health', (req, res) => {

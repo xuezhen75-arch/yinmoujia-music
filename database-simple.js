@@ -323,6 +323,14 @@ module.exports = {
         return shares[id] || null;
     },
 
+    // 按deviceId查询所有生成记录（倒序）
+    getSharesByDeviceId(deviceId) {
+        const shares = readShares();
+        return Object.values(shares)
+            .filter(r => r.deviceId === deviceId)
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    },
+
     incrementSharePlays(id) {
         const shares = readShares();
         if (shares[id]) {
