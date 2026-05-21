@@ -1,6 +1,7 @@
 /**
  * 音谋加 - suno-api.io 对接模块
  * 基于 https://www.suno-api.io (OpenAI兼容格式)
+ * v2.2: 支持双歌曲解析 + 纯乐器模式
  */
 
 const axios = require('axios');
@@ -21,8 +22,8 @@ class AIMusicAPI {
      * 生成音乐
      * 使用 OpenAI 兼容接口，直接返回完整结果（同步等待）
      */
-    async generateMusic({ mood, scene, style, keyword, lyrics }) {
-        const { prompt } = this.buildPrompt({ mood, scene, style, keyword, lyrics });
+    async generateMusic({ mood, scene, style, keyword, lyrics, instrumental }) {
+        const { prompt } = this.buildPrompt({ mood, scene, style, keyword, lyrics, instrumental });
 
         try {
             const response = await axios.post(
@@ -42,7 +43,7 @@ class AIMusicAPI {
                         'Authorization': `Bearer ${this.apiKey}`,
                         'Content-Type': 'application/json'
                     },
-                    timeout: 180000  // 3分钟，音乐生成比较慢
+                    timeout: 180000  // 3分钟
                 }
             );
 
@@ -50,17 +51,18 @@ class AIMusicAPI {
             const content = response.data?.choices?.[0]?.message?.content
                          || response.data;
 
-            const parsed = this.parseResponse(content, prompt);
+            const songs = this.parseResponse(content);
 
             return {
                 success: true,
-                task_id: parsed.taskId || `task_${Date.now()}`,
                 status: 'completed',
-                title: parsed.title,
-                audioUrl: parsed.audioUrl,
-                imageUrl: parsed.imageUrl,
-                lyrics: parsed.lyrics,
-                // 兼容轮询模式
+                songs: songs,  // 返回歌曲数组（1-2首）
+                // 向下兼容：第一首歌的单体数据
+                task_id: songs[0]?.taskId || `task_${Date.now()}`,
+                title: songs[0]?.title,
+                audioUrl: songs[0]?.audioUrl,
+                imageUrl: songs[0]?.imageUrl,
+                lyrics: songs[0]?.lyrics,
                 _direct: true
             };
 
@@ -78,14 +80,12 @@ class AIMusicAPI {
     }
 
     /**
-     * 查询生成状态（suno-api.io是同步返回，这里直接从缓存取）
+     * 查询生成状态
      */
     async getStatus(taskId) {
-        // 从内存缓存取，如果有的话
         if (this._cache && this._cache[taskId]) {
             return this._cache[taskId];
         }
-        // 没有缓存则返回generating状态
         return {
             success: false,
             status: 'generating',
@@ -93,50 +93,84 @@ class AIMusicAPI {
         };
     }
 
-    /**
-     * 缓存生成结果（供getStatus使用）
-     */
     cacheResult(taskId, result) {
         if (!this._cache) this._cache = {};
         this._cache[taskId] = result;
     }
 
     /**
-     * 解析API返回的Markdown内容，提取音频URL和封面
-     * 返回格式示例：
+     * 解析API返回的Markdown内容，提取1-2首歌曲
+     * Suno v4 默认生成2首歌，格式可能如下：
+     *
      * ## Song Title: Sunshine Receipt
      * ![Song Cover](https://cdn2.suno.ai/image_xxx.jpeg)
      * ### Lyrics:
      * [Instrumental]
      * ### Listen to the song: https://audiopipe.suno.ai/?item_id=xxx
+     *
+     * ---
+     *
+     * ## Song Title: Another Song
+     * ...
      */
-    parseResponse(content, prompt) {
+    parseResponse(content) {
+        const songs = [];
+
+        if (typeof content !== 'string') return songs;
+
+        // 按分隔符拆分为歌曲块（支持 "---" 或多个 "## Song Title"）
+        const blocks = content.split(/\n---\n|\n={3,}\n/).filter(b => b.trim());
+
+        for (const block of blocks) {
+            const song = this.parseSingleSong(block);
+            if (song.audioUrl) {
+                songs.push(song);
+            }
+        }
+
+        // 如果没拆分成功（只有一首歌的情况），直接解析整体
+        if (songs.length === 0) {
+            const song = this.parseSingleSong(content);
+            if (song.audioUrl) songs.push(song);
+        }
+
+        return songs;
+    }
+
+    /**
+     * 解析单首歌曲
+     */
+    parseSingleSong(text) {
         let title = '生成的音乐';
         let audioUrl = null;
         let imageUrl = null;
         let lyrics = '';
         let itemId = null;
 
-        if (typeof content === 'string') {
-            // 提取标题
-            const titleMatch = content.match(/##\s*Song Title:\s*(.+)/i);
-            if (titleMatch) title = titleMatch[1].trim();
+        // 提取标题
+        const titleMatch = text.match(/##\s*Song Title:\s*(.+)/i);
+        if (titleMatch) title = titleMatch[1].trim();
 
-            // 提取封面图
-            const imageMatch = content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
-            if (imageMatch) imageUrl = imageMatch[1];
+        // 提取封面图
+        const imageMatch = text.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
+        if (imageMatch) imageUrl = imageMatch[1];
 
-            // 提取音频链接 (audiopipe.suno.ai 格式)
-            const audioMatch = content.match(/https?:\/\/audiopipe\.suno\.ai\/\?item_id=([a-f0-9-]+)/i);
-            if (audioMatch) {
-                itemId = audioMatch[1];
-                audioUrl = audioMatch[0];
-            }
-
-            // 提取歌词（Lyrics部分和Listen之间的内容）
-            const lyricsMatch = content.match(/###\s*Lyrics:\s*([\s\S]*?)(?=###\s*Listen|$)/i);
-            if (lyricsMatch) lyrics = lyricsMatch[1].trim();
+        // 提取音频链接
+        const audioMatch = text.match(/https?:\/\/audiopipe\.suno\.ai\/\?item_id=([a-f0-9-]+)/i);
+        if (audioMatch) {
+            itemId = audioMatch[1];
+            audioUrl = audioMatch[0];
         }
+
+        // 也支持直接提取 mp3 链接
+        if (!audioMatch) {
+            const mp3Match = text.match(/https?:\/\/[^\s\])"']+\.mp3[^\s\])"']*/i);
+            if (mp3Match) audioUrl = mp3Match[0];
+        }
+
+        // 提取歌词
+        const lyricsMatch = text.match(/###\s*Lyrics:\s*([\s\S]*?)(?=###\s*Listen|$)/i);
+        if (lyricsMatch) lyrics = lyricsMatch[1].trim();
 
         return { title, audioUrl, imageUrl, lyrics, taskId: itemId };
     }
@@ -144,7 +178,7 @@ class AIMusicAPI {
     /**
      * 构建提示词
      */
-    buildPrompt({ mood, scene, style, keyword, lyrics }) {
+    buildPrompt({ mood, scene, style, keyword, lyrics, instrumental }) {
         const moodMap = {
             happy: {
                 prompt: 'A happy and uplifting song about joy and good times',
@@ -233,8 +267,11 @@ class AIMusicAPI {
         const keywordDesc = keyword && keywordMap[keyword] ? `, ${keywordMap[keyword]}` : '';
 
         let prompt;
-        if (lyrics && lyrics.trim()) {
-            // 用户提供了自定义歌词，格式：歌词 + 风格标签
+        if (instrumental) {
+            // 纯乐器模式：不加歌词
+            prompt = `${moodData.prompt}${sceneDesc}${styleDesc}${keywordDesc}, Instrumental only, no vocals, no lyrics, pure music`;
+        } else if (lyrics && lyrics.trim()) {
+            // 用户提供了自定义歌词
             prompt = `${lyrics.trim()}\n\n[Style: ${moodData.tags}${styleDesc}]`;
         } else {
             // AI 自动生成歌词

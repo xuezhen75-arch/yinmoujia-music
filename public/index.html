@@ -6,541 +6,161 @@
     <title>音谋加 - 让每个人都能用音乐表达自己</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-
-        .container {
-            max-width: 420px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #fff; }
+        .container { max-width: 420px; margin: 0 auto; padding: 20px; min-height: 100vh; }
 
         /* 头部 */
-        .header {
-            text-align: center;
-            padding: 28px 0 15px;
-        }
-
+        .header { text-align: center; padding: 28px 0 15px; }
         .logo { font-size: 48px; margin-bottom: 10px; }
-
-        .title {
-            font-size: 28px;
-            font-weight: bold;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
+        .title { font-size: 28px; font-weight: bold; background: linear-gradient(90deg, #00d9ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .subtitle { color: #888; font-size: 14px; margin-top: 8px; }
 
         /* 配额卡片 */
-        .quota-card {
-            background: rgba(255,255,255,0.08);
-            border-radius: 16px;
-            padding: 14px 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 18px 0;
-        }
-
+        .quota-card { background: rgba(255,255,255,0.08); border-radius: 16px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; margin: 18px 0; }
         .quota-left { display: flex; align-items: center; gap: 10px; }
-
         .quota-icon { font-size: 22px; }
-
         .quota-text { font-size: 14px; color: #ccc; }
-
         .quota-text strong { color: #00ff88; font-size: 16px; }
-
         .quota-dots { display: flex; gap: 5px; }
-
-        .quota-dot {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.15);
-        }
-
+        .quota-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); }
         .quota-dot.used { background: #00d9ff; }
         .quota-dot.unlocked { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
 
         /* 标签网格 */
         .step { margin: 20px 0; }
-
         .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-
-        .step-num {
-            width: 26px; height: 26px;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 13px; color: #1a1a2e; flex-shrink: 0;
-        }
-
+        .step-num { width: 26px; height: 26px; background: linear-gradient(90deg, #00d9ff, #00ff88); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; color: #1a1a2e; flex-shrink: 0; }
         .step-title { font-size: 15px; color: #ccc; }
-
-        .tag-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-        }
-
-        .tag {
-            background: rgba(255,255,255,0.08);
-            border: 2px solid transparent;
-            border-radius: 12px;
-            padding: 11px 4px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        .tag-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .tag { background: rgba(255,255,255,0.08); border: 2px solid transparent; border-radius: 12px; padding: 11px 4px; text-align: center; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         .tag:active { transform: scale(0.95); }
-
-        .tag.selected {
-            background: rgba(0,217,255,0.2);
-            border-color: #00d9ff;
-        }
-
+        .tag.selected { background: rgba(0,217,255,0.2); border-color: #00d9ff; }
         .tag .icon { font-size: 18px; margin-bottom: 3px; }
         .tag .label { font-size: 10px; color: #ccc; }
         .tag.selected .label { color: #fff; }
 
-        .style-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-        }
-
-        .style-option {
-            background: rgba(255,255,255,0.08);
-            border: 2px solid transparent;
-            border-radius: 10px;
-            padding: 9px 3px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        .style-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .style-option { background: rgba(255,255,255,0.08); border: 2px solid transparent; border-radius: 10px; padding: 9px 3px; text-align: center; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         .style-option:active { transform: scale(0.95); }
-
-        .style-option.selected {
-            background: rgba(0,255,136,0.15);
-            border-color: #00ff88;
-        }
-
+        .style-option.selected { background: rgba(0,255,136,0.15); border-color: #00ff88; }
         .style-option .icon { font-size: 17px; margin-bottom: 2px; }
         .style-option .name { font-size: 10px; font-weight: 500; }
         .style-option .desc { font-size: 9px; color: #555; margin-top: 1px; }
         .style-option.selected .desc { color: #888; }
 
         /* 已选摘要 */
-        .selected-summary {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-top: 16px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 7px;
-            min-height: 40px;
-        }
-
-        .selected-item {
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            color: #1a1a2e;
-            padding: 4px 11px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
+        .selected-summary { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 14px; margin-top: 16px; display: flex; flex-wrap: wrap; gap: 7px; min-height: 40px; }
+        .selected-item { background: linear-gradient(90deg, #00d9ff, #00ff88); color: #1a1a2e; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 500; }
 
         /* 生成按钮 */
-        .generate-btn {
-            width: 100%;
-            padding: 17px;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            border: none;
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: bold;
-            color: #1a1a2e;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        .generate-btn { width: 100%; padding: 17px; background: linear-gradient(90deg, #00d9ff, #00ff88); border: none; border-radius: 16px; font-size: 17px; font-weight: bold; color: #1a1a2e; cursor: pointer; margin-top: 20px; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; -webkit-tap-highlight-color: transparent; }
         .generate-btn:active:not(:disabled) { transform: scale(0.98); }
         .generate-btn:disabled { background: #2a2a3e; color: #555; cursor: not-allowed; }
 
         /* 加载动画 */
-        .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10,10,20,0.97);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,20,0.97); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
         .loading-overlay.active { display: flex; }
-
-        .loading-spinner {
-            width: 68px; height: 68px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #00d9ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
+        .loading-spinner { width: 68px; height: 68px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #00d9ff; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
         .loading-text { margin-top: 26px; font-size: 17px; color: #ccc; }
-        .loading-tip {
-            margin-top: 11px; font-size: 13px; color: #666;
-            text-align: center; padding: 0 40px; line-height: 1.6;
-        }
-
+        .loading-tip { margin-top: 11px; font-size: 13px; color: #666; text-align: center; padding: 0 40px; line-height: 1.6; }
         .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
-        @keyframes dots {
-            0% { content: ''; }
-            33% { content: '.'; }
-            66% { content: '..'; }
-            100% { content: '...'; }
-        }
-
+        @keyframes dots { 0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'} }
         .loading-progress { width: 210px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 20px; overflow: hidden; }
         .loading-progress-bar { height: 100%; background: linear-gradient(90deg, #00d9ff, #00ff88); width: 0%; animation: progress 120s linear forwards; }
         @keyframes progress { to { width: 90%; } }
 
         /* 结果页面 */
-        .result-page {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            z-index: 500;
-            display: none;
-            overflow-y: auto;
-        }
-
+        .result-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); z-index: 500; display: none; overflow-y: auto; }
         .result-page.active { display: block; }
-
         .result-content { max-width: 420px; margin: 0 auto; padding: 28px 20px; }
-
-        .result-badge {
-            display: inline-block;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            color: #1a1a2e;
-            padding: 5px 16px;
-            border-radius: 20px;
-            font-size: 12px; font-weight: bold;
-        }
-
-        .album-cover {
-            width: 210px; height: 210px;
-            margin: 26px auto;
-            border-radius: 22px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 85px;
-            box-shadow: 0 18px 45px rgba(102, 126, 234, 0.35);
-            overflow: hidden;
-        }
-
+        .result-badge { display: inline-block; background: linear-gradient(90deg, #00d9ff, #00ff88); color: #1a1a2e; padding: 5px 16px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .album-cover { width: 210px; height: 210px; margin: 26px auto; border-radius: 22px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; font-size: 85px; box-shadow: 0 18px 45px rgba(102, 126, 234, 0.35); overflow: hidden; }
         .album-cover img { width: 100%; height: 100%; object-fit: cover; }
-
         .music-title { font-size: 21px; font-weight: bold; text-align: center; margin-bottom: 4px; }
         .music-artist { color: #888; font-size: 13px; text-align: center; margin-bottom: 18px; }
-
-        .remaining-tip {
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 14px;
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-        }
-
+        .remaining-tip { text-align: center; font-size: 13px; color: #888; margin-bottom: 14px; padding: 8px 16px; background: rgba(255,255,255,0.05); border-radius: 10px; }
         .remaining-tip.warn { color: #ffd700; background: rgba(255,215,0,0.1); }
 
-        /* 播放器 */
-        .player-card {
-            background: rgba(255,255,255,0.08);
-            border-radius: 18px;
-            padding: 20px;
-            margin: 18px 0;
-        }
+        /* 双歌曲选择 */
+        .songs-picker { margin: 16px 0; }
+        .songs-picker-title { font-size: 13px; color: #888; text-align: center; margin-bottom: 10px; }
+        .songs-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .song-card { background: rgba(255,255,255,0.06); border: 2px solid transparent; border-radius: 14px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .song-card:active { transform: scale(0.97); }
+        .song-card.selected { border-color: #00d9ff; background: rgba(0,217,255,0.1); }
+        .song-card .song-num { font-size: 11px; color: #666; margin-bottom: 6px; }
+        .song-card .song-cover-sm { width: 80px; height: 80px; border-radius: 12px; margin: 0 auto 8px; background: linear-gradient(135deg, #667eea, #764ba2); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+        .song-card .song-cover-sm img { width: 100%; height: 100%; object-fit: cover; }
+        .song-card .song-title-sm { font-size: 13px; font-weight: 500; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+        /* 播放器 */
+        .player-card { background: rgba(255,255,255,0.08); border-radius: 18px; padding: 20px; margin: 18px 0; }
         .player-progress { width: 100%; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; margin-bottom: 8px; cursor: pointer; }
         .player-progress-bar { height: 100%; background: linear-gradient(90deg, #00d9ff, #00ff88); width: 0%; transition: width 0.1s linear; }
         .player-time { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 16px; }
-
         .player-controls { display: flex; justify-content: center; align-items: center; gap: 28px; }
-
         .control-btn { background: none; border: none; font-size: 24px; cursor: pointer; opacity: 0.5; transition: all 0.2s; }
         .control-btn:hover { opacity: 1; }
-
-        .play-btn {
-            width: 60px; height: 60px;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            border-radius: 50%; border: none;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 24px; cursor: pointer; transition: all 0.2s;
-        }
+        .play-btn { width: 60px; height: 60px; background: linear-gradient(90deg, #00d9ff, #00ff88); border-radius: 50%; border: none; display: flex; justify-content: center; align-items: center; font-size: 24px; cursor: pointer; transition: all 0.2s; }
         .play-btn:active { transform: scale(0.95); }
 
         /* 操作按钮 */
         .action-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
-        .action-btn {
-            background: rgba(255,255,255,0.08);
-            border: none; border-radius: 13px;
-            padding: 14px 6px; text-align: center;
-            cursor: pointer; transition: all 0.2s; color: #fff;
-        }
+        .action-btn { background: rgba(255,255,255,0.08); border: none; border-radius: 13px; padding: 14px 6px; text-align: center; cursor: pointer; transition: all 0.2s; color: #fff; }
         .action-btn:active { transform: scale(0.95); }
         .action-btn .icon { font-size: 24px; margin-bottom: 4px; }
         .action-btn .label { font-size: 11px; color: #888; }
-
-        .back-btn {
-            width: 100%; padding: 15px;
-            background: transparent;
-            border: 2px solid rgba(255,255,255,0.15);
-            border-radius: 13px;
-            color: #fff; font-size: 14px; cursor: pointer; margin-top: 10px;
-            transition: all 0.2s;
-        }
+        .back-btn { width: 100%; padding: 15px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 13px; color: #fff; font-size: 14px; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
         .back-btn:active { background: rgba(255,255,255,0.05); }
 
         /* 解锁码弹窗 */
-        .unlock-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.88);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-
+        .unlock-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); display: none; justify-content: center; align-items: center; z-index: 2000; }
         .unlock-modal.active { display: flex; }
-
-        .unlock-content {
-            background: #1a1a2e;
-            border-radius: 22px;
-            padding: 28px 24px;
-            width: 92%;
-            max-width: 360px;
-            border: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-        }
-
+        .unlock-content { background: #1a1a2e; border-radius: 22px; padding: 28px 24px; width: 92%; max-width: 360px; border: 1px solid rgba(255,255,255,0.1); text-align: center; }
         .unlock-icon { font-size: 48px; margin-bottom: 14px; }
-
         .unlock-title { font-size: 18px; font-weight: bold; margin-bottom: 6px; }
-
-        .unlock-desc {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 18px;
-            line-height: 1.6;
-        }
-
+        .unlock-desc { font-size: 13px; color: #888; margin-bottom: 18px; line-height: 1.6; }
         .unlock-desc strong { color: #ffd700; }
-
-        /* 付费指引 */
-        .pay-guide {
-            background: rgba(255,215,0,0.08);
-            border: 1px solid rgba(255,215,0,0.2);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 16px;
-            text-align: left;
-        }
-
+        .pay-guide { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: left; }
         .pay-guide-title { font-size: 13px; font-weight: bold; color: #ffd700; margin-bottom: 8px; }
-
         .pay-guide p { font-size: 12px; color: #ccc; margin-bottom: 6px; line-height: 1.5; }
-
-        /* 码输入 */
-        .code-input {
-            width: 100%;
-            padding: 12px 14px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 15px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            text-align: center;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
+        .code-input { width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; font-size: 15px; font-weight: bold; letter-spacing: 2px; text-align: center; text-transform: uppercase; margin-bottom: 10px; }
         .code-input:focus { outline: none; border-color: #00ff88; }
         .code-input::placeholder { color: #444; letter-spacing: 1px; font-weight: normal; }
-
-        .unlock-btn {
-            width: 100%;
-            padding: 13px;
-            background: linear-gradient(90deg, #00d9ff, #00ff88);
-            border: none;
-            border-radius: 11px;
-            color: #1a1a2e;
-            font-weight: bold;
-            font-size: 15px;
-            cursor: pointer;
-        }
-
-        .unlock-close {
-            background: transparent;
-            border: none;
-            color: #666;
-            font-size: 13px;
-            cursor: pointer;
-            margin-top: 10px;
-            padding: 6px;
-        }
-
-        .unlock-status {
-            font-size: 12px;
-            margin-top: 8px;
-            min-height: 18px;
-        }
+        .unlock-btn { width: 100%; padding: 13px; background: linear-gradient(90deg, #00d9ff, #00ff88); border: none; border-radius: 11px; color: #1a1a2e; font-weight: bold; font-size: 15px; cursor: pointer; }
+        .unlock-close { background: transparent; border: none; color: #666; font-size: 13px; cursor: pointer; margin-top: 10px; padding: 6px; }
+        .unlock-status { font-size: 12px; margin-top: 8px; min-height: 18px; }
         .unlock-status.error { color: #ff6b6b; }
         .unlock-status.success { color: #00ff88; }
 
         /* Toast */
-        .toast {
-            position: fixed;
-            top: 20px; left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: #1a1a2e;
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            z-index: 9999;
-            transition: transform 0.3s ease;
-            max-width: 320px;
-            text-align: center;
-        }
-
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #1a1a2e; border: 1px solid rgba(255,255,255,0.15); padding: 12px 24px; border-radius: 12px; font-size: 14px; z-index: 9999; transition: transform 0.3s ease; max-width: 320px; text-align: center; }
         .toast.show { transform: translateX(-50%) translateY(0); }
         .toast.success { border-color: #00ff88; color: #00ff88; }
         .toast.error { border-color: #ff6b6b; color: #ff6b6b; }
         .toast.warn { border-color: #ffd700; color: #ffd700; }
 
-        /* 底部 */
-        .footer { text-align: center; padding: 24px 0; color: #444; font-size: 11px; }
-
         /* 歌词区域 */
-        .lyrics-section {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 8px;
-        }
-
-        .lyrics-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .lyrics-tab {
-            flex: 1;
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid transparent;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            cursor: pointer;
-            transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        .lyrics-section { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; margin-top: 8px; }
+        .lyrics-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+        .lyrics-tab { flex: 1; padding: 8px 6px; background: rgba(255,255,255,0.08); border: 1px solid transparent; border-radius: 8px; text-align: center; font-size: 12px; color: #888; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
         .lyrics-tab:active { transform: scale(0.97); }
-
-        .lyrics-tab.active {
-            background: rgba(0,217,255,0.15);
-            border-color: #00d9ff;
-            color: #fff;
-        }
-
-        .lyrics-ai-hint {
-            text-align: center;
-            color: #666;
-            font-size: 13px;
-            padding: 10px;
-            line-height: 1.6;
-        }
-
-        .lyrics-input {
-            width: 100%;
-            min-height: 130px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 10px;
-            padding: 12px;
-            color: #fff;
-            font-size: 14px;
-            line-height: 1.7;
-            resize: vertical;
-            font-family: inherit;
-        }
-
+        .lyrics-tab.active { background: rgba(0,217,255,0.15); border-color: #00d9ff; color: #fff; }
+        .lyrics-ai-hint { text-align: center; color: #666; font-size: 13px; padding: 10px; line-height: 1.6; }
+        .lyrics-input { width: 100%; min-height: 130px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 12px; color: #fff; font-size: 14px; line-height: 1.7; resize: vertical; font-family: inherit; }
         .lyrics-input:focus { outline: none; border-color: #00d9ff; }
         .lyrics-input::placeholder { color: #444; }
+        .lyrics-instrumental-hint { text-align: center; color: #666; font-size: 13px; padding: 14px 10px; line-height: 1.6; }
+        .lyrics-instrumental-hint .inst-icon { font-size: 36px; margin-bottom: 8px; display: block; }
 
         /* 歌词展示 */
-        .lyrics-display {
-            background: rgba(255,255,255,0.05);
-            border-radius: 14px;
-            padding: 16px;
-            margin: 14px 0;
-            max-height: 220px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            line-height: 1.8;
-            font-size: 14px;
-            color: #ccc;
-            text-align: center;
-        }
-
+        .lyrics-display { background: rgba(255,255,255,0.05); border-radius: 14px; padding: 16px; margin: 14px 0; max-height: 220px; overflow-y: auto; white-space: pre-wrap; line-height: 1.8; font-size: 14px; color: #ccc; text-align: center; }
         .lyrics-display::-webkit-scrollbar { width: 4px; }
         .lyrics-display::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
-        /* 首次提示 */
-        .first-tip {
-            background: rgba(0,217,255,0.08);
-            border: 1px solid rgba(0,217,255,0.15);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin: 12px 0;
-            font-size: 12px;
-            color: #00d9ff;
-            text-align: center;
-            line-height: 1.6;
-        }
+        .first-tip { background: rgba(0,217,255,0.08); border: 1px solid rgba(0,217,255,0.15); border-radius: 12px; padding: 12px 16px; margin: 12px 0; font-size: 12px; color: #00d9ff; text-align: center; line-height: 1.6; }
+        .footer { text-align: center; padding: 24px 0; color: #444; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -556,28 +176,20 @@
         <p class="subtitle">选择心情，AI为你创作一首歌</p>
     </div>
 
-    <!-- 首次提示 -->
-    <div class="first-tip" id="firstTip" style="display:none">
-        🎁 新用户免费生成 5 次，快来试试吧！
-    </div>
+    <div class="first-tip" id="firstTip" style="display:none">🎁 新用户免费生成 5 次，快来试试吧！</div>
 
     <!-- 配额卡片 -->
     <div class="quota-card" id="quotaCard">
         <div class="quota-left">
             <span class="quota-icon" id="quotaIcon">🎵</span>
-            <div class="quota-text">
-                <span id="quotaText">加载中...</span>
-            </div>
+            <div class="quota-text"><span id="quotaText">加载中...</span></div>
         </div>
         <div class="quota-dots" id="quotaDots"></div>
     </div>
 
     <!-- 心情 -->
     <div class="step">
-        <div class="step-header">
-            <span class="step-num">1</span>
-            <span class="step-title">你现在的心情是？</span>
-        </div>
+        <div class="step-header"><span class="step-num">1</span><span class="step-title">你现在的心情是？</span></div>
         <div class="tag-grid" id="moodGrid">
             <div class="tag" data-value="happy"><div class="icon">😊</div><div class="label">开心</div></div>
             <div class="tag" data-value="sad"><div class="icon">😢</div><div class="label">难过</div></div>
@@ -594,10 +206,7 @@
 
     <!-- 场景 -->
     <div class="step">
-        <div class="step-header">
-            <span class="step-num">2</span>
-            <span class="step-title">什么场景？</span>
-        </div>
+        <div class="step-header"><span class="step-num">2</span><span class="step-title">什么场景？</span></div>
         <div class="tag-grid" id="sceneGrid">
             <div class="tag" data-value="morning"><div class="icon">🌅</div><div class="label">清晨</div></div>
             <div class="tag" data-value="night"><div class="icon">🌙</div><div class="label">夜晚</div></div>
@@ -614,10 +223,7 @@
 
     <!-- 风格 -->
     <div class="step">
-        <div class="step-header">
-            <span class="step-num">3</span>
-            <span class="step-title">喜欢什么风格？</span>
-        </div>
+        <div class="step-header"><span class="step-num">3</span><span class="step-title">喜欢什么风格？</span></div>
         <div class="style-grid" id="styleGrid">
             <div class="style-option" data-value="pop"><div class="icon">🎤</div><div class="name">流行</div><div class="desc">朗朗上口</div></div>
             <div class="style-option" data-value="rock"><div class="icon">🎸</div><div class="name">摇滚</div><div class="desc">激情澎湃</div></div>
@@ -634,10 +240,7 @@
 
     <!-- 关键词 -->
     <div class="step">
-        <div class="step-header">
-            <span class="step-num">4</span>
-            <span class="step-title">加什么 feel？（可选）</span>
-        </div>
+        <div class="step-header"><span class="step-num">4</span><span class="step-title">加什么 feel？（可选）</span></div>
         <div class="tag-grid" id="keywordGrid">
             <div class="tag" data-value="sunshine"><div class="icon">☀️</div><div class="label">阳光</div></div>
             <div class="tag" data-value="rainy"><div class="icon">🌧️</div><div class="label">雨声</div></div>
@@ -652,20 +255,16 @@
         </div>
     </div>
 
-    <!-- 歌词（可选） -->
+    <!-- 歌词/乐器（三选一） -->
     <div class="step">
-        <div class="step-header">
-            <span class="step-num">5</span>
-            <span class="step-title">填入歌词（可选）</span>
-        </div>
+        <div class="step-header"><span class="step-num">5</span><span class="step-title">歌词设置（可选）</span></div>
         <div class="lyrics-section">
             <div class="lyrics-tabs">
-                <div class="lyrics-tab active" id="tabAi" onclick="switchLyricsMode('ai')">AI 自动写词</div>
-                <div class="lyrics-tab" id="tabCustom" onclick="switchLyricsMode('custom')">自己写歌词</div>
+                <div class="lyrics-tab active" id="tabAi" onclick="switchLyricsMode('ai')">AI 写词</div>
+                <div class="lyrics-tab" id="tabCustom" onclick="switchLyricsMode('custom')">自己写</div>
+                <div class="lyrics-tab" id="tabInstrumental" onclick="switchLyricsMode('instrumental')">纯乐器</div>
             </div>
-            <div class="lyrics-ai-mode" id="lyricsAiMode">
-                <div class="lyrics-ai-hint">AI 将根据你的心情和风格自动生成歌词</div>
-            </div>
+            <div class="lyrics-ai-mode" id="lyricsAiMode"><div class="lyrics-ai-hint">AI 将根据你的心情和风格自动生成歌词</div></div>
             <div class="lyrics-custom-mode" id="lyricsCustomMode" style="display:none">
                 <textarea class="lyrics-input" id="lyricsInput" placeholder="在这里写下你的歌词...
 
@@ -677,6 +276,13 @@
 [Chorus]
 追逐光芒的脚步
 永不停歇"></textarea>
+            </div>
+            <div class="lyrics-instrumental-mode" id="lyricsInstrumentalMode" style="display:none">
+                <div class="lyrics-instrumental-hint">
+                    <span class="inst-icon">🎸🎹🎻</span>
+                    生成纯音乐，没有人声<br>
+                    适合做背景音乐、配乐
+                </div>
             </div>
         </div>
     </div>
@@ -700,19 +306,22 @@
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
     <div class="loading-text"><span id="loadingText">AI 正在创作</span><span class="loading-dots"></span></div>
-    <div class="loading-tip">结合你的选择，生成专属音乐<br>通常需要 60~120 秒，请耐心等待</div>
+    <div class="loading-tip">AI正在生成2首歌曲供你选择<br>通常需要 60~120 秒，请耐心等待</div>
     <div class="loading-progress"><div class="loading-progress-bar" id="loadingBar"></div></div>
 </div>
 
 <!-- 结果页 -->
 <div class="result-page" id="resultPage">
     <div class="result-content">
-        <div class="result-header">
-            <span class="result-badge">🎵 AI 专属创作</span>
+        <div class="result-header"><span class="result-badge">🎵 AI 专属创作</span></div>
+
+        <!-- 双歌曲选择 -->
+        <div class="songs-picker" id="songsPicker" style="display:none">
+            <div class="songs-picker-title">为你生成了2首歌曲，点击选择</div>
+            <div class="songs-cards" id="songsCards"></div>
         </div>
 
         <div class="album-cover" id="albumCover">🎵</div>
-
         <div class="music-title" id="musicTitle">专属音乐</div>
         <div class="music-artist">by 音谋加 × 大树音乐</div>
 
@@ -750,9 +359,7 @@
 
         <button class="back-btn" onclick="goBack()">← 返回继续创作</button>
 
-        <div class="footer">
-            © 大树音乐 · 纳心治愈系
-        </div>
+        <div class="footer">© 大树音乐 · 纳心治愈系</div>
     </div>
 </div>
 
@@ -765,7 +372,6 @@
             您已使用全部 <strong>5</strong> 次免费生成<br>
             之后每首仅需 <strong>¥0.8</strong>，扫码联系获取
         </div>
-
         <div class="pay-guide">
             <div class="pay-guide-title">💡 如何继续使用</div>
             <p>① 扫码 → 加微信（或查看朋友圈）</p>
@@ -773,7 +379,6 @@
             <p>③ 也可购买年卡解锁码 → 无限创作</p>
             <p>④ 输入解锁码 或 等待管理员充值</p>
         </div>
-
         <input type="text" class="code-input" id="codeInput" placeholder="输入解锁码" maxlength="20">
         <button class="unlock-btn" onclick="submitUnlockCode()">解锁继续使用</button>
         <div class="unlock-status" id="unlockStatus"></div>
@@ -783,7 +388,7 @@
 
 <script>
 // ============ 配置 ============
-const API_BASE = '';  // 同源，后端直接提供静态文件
+const API_BASE = '';
 const DEVICE_KEY = 'yinmoujia_device_v2';
 const FREE_LIMIT = 5;
 
@@ -791,6 +396,7 @@ const FREE_LIMIT = 5;
 const state = {
     deviceId: null,
     mood: null, scene: null, style: null, keyword: null,
+    lyricsMode: 'ai',  // 'ai' | 'custom' | 'instrumental'
     isPlaying: false,
     currentAudioUrl: null,
     currentTitle: null,
@@ -800,7 +406,10 @@ const state = {
     unlocked: false,
     unlockedExpiry: null,
     balance: 0,
-    isFreeUser: false
+    isFreeUser: false,
+    shareUrl: null,
+    // 所有生成的歌曲
+    allSongs: []
 };
 
 // ============ 初始化 ============
@@ -834,7 +443,6 @@ async function loadQuota() {
             renderQuota(q);
         }
     } catch (e) {
-        // 离线模式，显示本地缓存
         renderQuota({ remaining: '?', freeUsed: 0, freeLimit: FREE_LIMIT, unlocked: false });
     }
 }
@@ -845,20 +453,15 @@ function renderQuota(q) {
     const iconEl = document.getElementById('quotaIcon');
     const tipEl = document.getElementById('firstTip');
 
-    // 渲染点
     dotsEl.innerHTML = '';
     for (let i = 0; i < q.freeLimit; i++) {
         const dot = document.createElement('div');
         dot.className = 'quota-dot';
-        if (q.unlocked) {
-            dot.className += ' unlocked';
-        } else if (i < q.freeUsed) {
-            dot.className += ' used';
-        }
+        if (q.unlocked) dot.className += ' unlocked';
+        else if (i < q.freeUsed) dot.className += ' used';
         dotsEl.appendChild(dot);
     }
 
-    // 文字
     if (q.unlocked) {
         const expDate = q.unlockExpiry ? new Date(q.unlockExpiry).toLocaleDateString('zh-CN') : '';
         textEl.innerHTML = `<strong style="color:#00ff88">已解锁</strong> · 有效期至 ${expDate}`;
@@ -889,12 +492,8 @@ function setupTags() {
 
 function selectTag(type, el, gridId) {
     document.querySelectorAll(`${gridId} .tag`).forEach(t => t.classList.remove('selected'));
-    if (state[type] === el.dataset.value) {
-        state[type] = null;
-    } else {
-        el.classList.add('selected');
-        state[type] = el.dataset.value;
-    }
+    if (state[type] === el.dataset.value) { state[type] = null; }
+    else { el.classList.add('selected'); state[type] = el.dataset.value; }
     updateSummary(); updateButton();
 }
 
@@ -906,44 +505,37 @@ function selectStyle(el) {
 }
 
 function updateSummary() {
-    const names = { happy:'开心', sad:'难过', love:'恋爱', relax:'放松', energetic:'热血',
-                     melancholy:'忧郁', anxious:'焦虑', nostalgic:'怀旧', peaceful:'平静', grateful:'感恩',
-                     morning:'清晨', night:'夜晚', workout:'健身', study:'学习', travel:'旅行',
-                     alone:'独处', party:'派对', rain:'雨天', commute:'通勤', sunset:'黄昏',
-                     pop:'流行', rock:'摇滚', electronic:'电子', folk:'民谣', jazz:'爵士',
-                     classical:'古典', healing:'治愈', ambient:'氛围', rnb:'R&B', cinematic:'电影',
-                     sunshine:'阳光', rainy:'雨声', coffee:'咖啡', dreamy:'梦幻', vintage:'复古',
-                     neon:'霓虹', nature:'自然', urban:'都市', tropical:'热带', winter:'冬日' };
+    const names = { happy:'开心', sad:'难过', love:'恋爱', relax:'放松', energetic:'热血', melancholy:'忧郁', anxious:'焦虑', nostalgic:'怀旧', peaceful:'平静', grateful:'感恩', morning:'清晨', night:'夜晚', workout:'健身', study:'学习', travel:'旅行', alone:'独处', party:'派对', rain:'雨天', commute:'通勤', sunset:'黄昏', pop:'流行', rock:'摇滚', electronic:'电子', folk:'民谣', jazz:'爵士', classical:'古典', healing:'治愈', ambient:'氛围', rnb:'R&B', cinematic:'电影', sunshine:'阳光', rainy:'雨声', coffee:'咖啡', dreamy:'梦幻', vintage:'复古', neon:'霓虹', nature:'自然', urban:'都市', tropical:'热带', winter:'冬日' };
     const items = [];
-    if (state.mood)    items.push(`<span class="selected-item">${names[state.mood]}</span>`);
-    if (state.scene)   items.push(`<span class="selected-item">${names[state.scene]}</span>`);
-    if (state.style)   items.push(`<span class="selected-item">${names[state.style]}</span>`);
+    if (state.mood) items.push(`<span class="selected-item">${names[state.mood]}</span>`);
+    if (state.scene) items.push(`<span class="selected-item">${names[state.scene]}</span>`);
+    if (state.style) items.push(`<span class="selected-item">${names[state.style]}</span>`);
     if (state.keyword) items.push(`<span class="selected-item">${names[state.keyword]}</span>`);
     document.getElementById('selectedSummary').innerHTML = items.join('');
 }
 
 function updateButton() {
     const btn = document.getElementById('generateBtn');
-    const ready = !!(state.mood && state.scene && state.style);
-    btn.disabled = !ready;
+    btn.disabled = !!(state.mood && state.scene && state.style);
 }
 
-// ============ 歌词 ============
+// ============ 歌词三选一 ============
 function switchLyricsMode(mode) {
-    const tabAi = document.getElementById('tabAi');
-    const tabCustom = document.getElementById('tabCustom');
-    const aiMode = document.getElementById('lyricsAiMode');
-    const customMode = document.getElementById('lyricsCustomMode');
+    state.lyricsMode = mode;
+    document.querySelectorAll('.lyrics-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('lyricsAiMode').style.display = 'none';
+    document.getElementById('lyricsCustomMode').style.display = 'none';
+    document.getElementById('lyricsInstrumentalMode').style.display = 'none';
+
     if (mode === 'ai') {
-        tabAi.classList.add('active');
-        tabCustom.classList.remove('active');
-        aiMode.style.display = 'block';
-        customMode.style.display = 'none';
-    } else {
-        tabAi.classList.remove('active');
-        tabCustom.classList.add('active');
-        aiMode.style.display = 'none';
-        customMode.style.display = 'block';
+        document.getElementById('tabAi').classList.add('active');
+        document.getElementById('lyricsAiMode').style.display = 'block';
+    } else if (mode === 'custom') {
+        document.getElementById('tabCustom').classList.add('active');
+        document.getElementById('lyricsCustomMode').style.display = 'block';
+    } else if (mode === 'instrumental') {
+        document.getElementById('tabInstrumental').classList.add('active');
+        document.getElementById('lyricsInstrumentalMode').style.display = 'block';
     }
 }
 
@@ -953,82 +545,54 @@ function openUnlockModal() {
     document.getElementById('codeInput').value = '';
     document.getElementById('unlockStatus').textContent = '';
 }
-
-function closeUnlockModal() {
-    document.getElementById('unlockModal').classList.remove('active');
-}
+function closeUnlockModal() { document.getElementById('unlockModal').classList.remove('active'); }
 
 async function submitUnlockCode() {
     const code = document.getElementById('codeInput').value.trim();
     const statusEl = document.getElementById('unlockStatus');
+    if (!code) { statusEl.textContent = '请输入解锁码'; statusEl.className = 'unlock-status error'; return; }
 
-    if (!code) {
-        statusEl.textContent = '请输入解锁码';
-        statusEl.className = 'unlock-status error';
-        return;
-    }
-
-    statusEl.textContent = '验证中...';
-    statusEl.className = 'unlock-status';
-
+    statusEl.textContent = '验证中...'; statusEl.className = 'unlock-status';
     try {
         const res = await fetch(`${API_BASE}/api/unlock`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ device_id: state.deviceId, code })
         });
-
         const json = await res.json();
-
         if (json.success) {
-            statusEl.textContent = '✅ ' + json.data.message;
-            statusEl.className = 'unlock-status success';
-            state.unlocked = true;
-            state.unlockedExpiry = json.data.expiry;
-            closeUnlockModal();
-            loadQuota();
+            statusEl.textContent = '✅ ' + json.data.message; statusEl.className = 'unlock-status success';
+            state.unlocked = true; state.unlockedExpiry = json.data.expiry;
+            closeUnlockModal(); loadQuota();
             showToast('🎉 ' + json.data.message, 'success');
-        } else {
-            statusEl.textContent = '❌ ' + json.error;
-            statusEl.className = 'unlock-status error';
-        }
-    } catch (e) {
-        statusEl.textContent = '❌ 网络错误，请重试';
-        statusEl.className = 'unlock-status error';
-    }
+        } else { statusEl.textContent = '❌ ' + json.error; statusEl.className = 'unlock-status error'; }
+    } catch (e) { statusEl.textContent = '❌ 网络错误，请重试'; statusEl.className = 'unlock-status error'; }
 }
 
 // ============ 生成 ============
 async function generateMusic() {
     if (!state.mood || !state.scene || !state.style) return;
 
-    // 检查配额
     if (!state.unlocked && !state.isFreeUser && state.remaining <= 0 && state.balance < 0.8) {
-        openUnlockModal();
-        return;
+        openUnlockModal(); return;
     }
 
     const overlay = document.getElementById('loadingOverlay');
     const bar = document.getElementById('loadingBar');
-    bar.style.animation = 'none';
-    bar.offsetHeight;
-    bar.style.animation = 'progress 120s linear forwards';
-
+    bar.style.animation = 'none'; bar.offsetHeight; bar.style.animation = 'progress 120s linear forwards';
     document.getElementById('loadingText').textContent = 'AI 正在创作';
     overlay.classList.add('active');
 
     try {
+        const bodyData = {
+            device_id: state.deviceId,
+            mood: state.mood, scene: state.scene, style: state.style, keyword: state.keyword,
+            instrumental: state.lyricsMode === 'instrumental',
+            lyrics: state.lyricsMode === 'custom' ? (document.getElementById('lyricsInput').value.trim() || '') : ''
+        };
+
         const res = await fetch(`${API_BASE}/api/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                device_id: state.deviceId,
-                mood: state.mood,
-                scene: state.scene,
-                style: state.style,
-                keyword: state.keyword,
-                lyrics: document.getElementById('lyricsInput').value.trim() || ''
-            }),
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData),
             signal: AbortSignal.timeout(200000)
         });
 
@@ -1037,25 +601,17 @@ async function generateMusic() {
         if (json.needPayment) {
             overlay.classList.remove('active');
             showToast('⚠️ ' + json.data.message, 'warn');
-            openUnlockModal();
-            return;
+            openUnlockModal(); return;
         }
-
-        if (!json.success) {
-            throw new Error(json.error || '生成失败');
-        }
+        if (!json.success) throw new Error(json.error || '生成失败');
 
         document.getElementById('loadingText').textContent = '创作完成！';
         await sleep(800);
         showResult(json.data);
-
     } catch (e) {
         overlay.classList.remove('active');
-        if (e.name === 'TimeoutError') {
-            showToast('⏱️ 请求超时，请稍后再试', 'error');
-        } else {
-            showToast('❌ 生成失败：' + e.message, 'error');
-        }
+        if (e.name === 'TimeoutError') showToast('⏱️ 请求超时，请稍后再试', 'error');
+        else showToast('❌ 生成失败：' + e.message, 'error');
     }
 }
 
@@ -1064,20 +620,98 @@ function showResult(data) {
     document.getElementById('loadingOverlay').classList.remove('active');
     document.getElementById('resultPage').classList.add('active');
 
-    document.getElementById('musicTitle').textContent = data.title || '专属音乐';
-    state.currentTitle = data.title || '专属音乐';
-    state.currentImageUrl = data.image_url || null;
+    state.shareUrl = data.share_url || null;
+    state.allSongs = data.songs || [];
 
-    // 歌词展示
+    // 如果有2首歌，显示选择器
+    const pickerEl = document.getElementById('songsPicker');
+    const cardsEl = document.getElementById('songsCards');
+
+    if (state.allSongs.length >= 2) {
+        pickerEl.style.display = 'block';
+        cardsEl.innerHTML = '';
+        state.allSongs.forEach((song, i) => {
+            const card = document.createElement('div');
+            card.className = 'song-card' + (i === 0 ? ' selected' : '');
+            card.dataset.index = i;
+            card.innerHTML = `
+                <div class="song-num">歌曲 ${i + 1}</div>
+                <div class="song-cover-sm" id="songCover${i}">${song.imageUrl ? '' : '🎵'}</div>
+                <div class="song-title-sm">${escHtml(song.title || '未命名')}</div>
+            `;
+            card.addEventListener('click', () => selectSong(i));
+            cardsEl.appendChild(card);
+
+            // 异步加载封面
+            if (song.imageUrl) {
+                const img = new Image();
+                img.src = song.imageUrl;
+                img.onload = () => {
+                    const coverEl = document.getElementById('songCover' + i);
+                    if (coverEl) { coverEl.innerHTML = ''; coverEl.appendChild(img); }
+                };
+            }
+        });
+        // 默认选中第一首
+        selectSong(0);
+    } else {
+        pickerEl.style.display = 'none';
+        // 只有一首歌，直接展示
+        applySong(data.songs[0] || data);
+        showRemainingInfo(data);
+    }
+}
+
+function selectSong(index) {
+    const song = state.allSongs[index];
+    if (!song) return;
+
+    // 更新选中状态
+    document.querySelectorAll('.song-card').forEach((c, i) => {
+        c.classList.toggle('selected', i === index);
+    });
+
+    applySong(song);
+}
+
+function applySong(song) {
+    const title = song.title || '专属音乐';
+    document.getElementById('musicTitle').textContent = title;
+    state.currentTitle = title;
+    state.currentImageUrl = song.imageUrl || null;
+
+    // 歌词
     const lyricsEl = document.getElementById('lyricsDisplay');
-    if (data.lyrics) {
-        lyricsEl.textContent = data.lyrics;
+    if (song.lyrics && song.lyrics !== '[Instrumental]') {
+        lyricsEl.textContent = song.lyrics;
         lyricsEl.style.display = 'block';
     } else {
         lyricsEl.style.display = 'none';
     }
 
-    // 剩余提示
+    // 封面
+    const cover = document.getElementById('albumCover');
+    if (song.imageUrl) {
+        const img = document.createElement('img');
+        img.src = song.imageUrl;
+        img.onerror = () => { cover.innerHTML = '🎵'; };
+        cover.innerHTML = '';
+        cover.appendChild(img);
+    } else {
+        cover.innerHTML = '🎵';
+    }
+
+    // 音频
+    state.currentAudioUrl = song.audioUrl;
+    state.isPlaying = false;
+    document.getElementById('playBtn').textContent = '▶️';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('currentTime').textContent = '0:00';
+    document.getElementById('totalTime').textContent = '--:--';
+    if (song.audioUrl) initAudio(song.audioUrl);
+}
+
+function showRemainingInfo(data) {
     const tipEl = document.getElementById('remainingTip');
     if (data.remaining !== undefined) {
         if (data.remaining > 0) {
@@ -1090,43 +724,13 @@ function showResult(data) {
             tipEl.textContent = '⚠️ 免费次数已用完，请充值继续（¥0.8/首）';
             tipEl.className = 'remaining-tip warn';
         }
-    } else {
-        tipEl.textContent = '';
-    }
+    } else { tipEl.textContent = ''; }
 
-    // 封面
-    const cover = document.getElementById('albumCover');
-    if (data.image_url) {
-        const img = document.createElement('img');
-        img.src = data.image_url;
-        img.onerror = () => { cover.innerHTML = '🎵'; };
-        cover.innerHTML = '';
-        cover.appendChild(img);
-    } else {
-        cover.innerHTML = '🎵';
-    }
-
-    // 音频
-    state.currentAudioUrl = data.audio_url;
-    state.isPlaying = false;
-    document.getElementById('playBtn').textContent = '▶️';
-    document.getElementById('progressBar').style.width = '0%';
-    document.getElementById('currentTime').textContent = '0:00';
-    document.getElementById('totalTime').textContent = '--:--';
-
-    if (data.audio_url) {
-        initAudio(data.audio_url);
-    }
-
-    // 更新配额
-    if (data.remaining !== undefined) {
-        state.remaining = data.remaining;
-    }
-    if (data.balance !== undefined) {
-        state.balance = data.balance;
-    }
+    if (data.remaining !== undefined) state.remaining = data.remaining;
+    if (data.balance !== undefined) state.balance = data.balance;
 }
 
+// ============ 播放器 ============
 function initAudio(url) {
     if (state.audioPlayer) { state.audioPlayer.pause(); state.audioPlayer = null; }
     state.audioPlayer = new Audio(url);
@@ -1158,7 +762,7 @@ function togglePlay() {
     if (state.isPlaying) state.audioPlayer.play().catch(() => {
         state.isPlaying = false;
         document.getElementById('playBtn').textContent = '▶️';
-        showToast('⚠️ 播放失败，可能链接被拦截', 'warn');
+        showToast('⚠️ 播放失败', 'warn');
     });
     else state.audioPlayer.pause();
 }
@@ -1178,80 +782,62 @@ function goBack() {
     document.querySelectorAll('.tag, .style-option').forEach(el => el.classList.remove('selected'));
     document.getElementById('selectedSummary').innerHTML = '';
     state.mood = state.scene = state.style = state.keyword = null;
-    updateButton();
-    loadQuota();
+    updateButton(); loadQuota();
 }
 
+// ============ 分享（带专属链接） ============
 function shareMusic() {
     const title = state.currentTitle || '音谋加 AI音乐';
+    const shareUrl = state.shareUrl || window.location.href;
     const shareData = {
         title: '🎵 ' + title,
-        text: `我用音谋加创作了「${title}」，AI生成的专属音乐，快来试试！`,
-        url: window.location.href
+        text: `我用音谋加创作了「${title}」，AI生成的专属音乐，快来听听！`,
+        url: shareUrl
     };
 
     if (navigator.share) {
-        navigator.share(shareData).catch(() => {
-            fallbackCopy(shareData.text + ' ' + shareData.url);
-        });
+        navigator.share(shareData).catch(() => fallbackCopy(shareData.text + '\n' + shareUrl));
     } else {
-        fallbackCopy(shareData.text + ' ' + shareData.url);
+        fallbackCopy(shareData.text + '\n' + shareUrl);
     }
 }
 
 function fallbackCopy(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            showToast('🔗 链接已复制到剪贴板！', 'success');
-        }).catch(() => {
-            manualCopy(text);
-        });
-    } else {
-        manualCopy(text);
-    }
+        navigator.clipboard.writeText(text).then(() => showToast('🔗 分享链接已复制！', 'success')).catch(() => manualCopy(text));
+    } else { manualCopy(text); }
 }
 
 function manualCopy(text) {
     const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.cssText = 'position:fixed;left:-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-        document.execCommand('copy');
-        showToast('🔗 链接已复制！', 'success');
-    } catch (e) {
-        showToast('请手动复制分享链接', 'warn');
-    }
+    ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast('🔗 分享链接已复制！', 'success'); }
+    catch (e) { showToast('请手动复制分享链接', 'warn'); }
     document.body.removeChild(ta);
 }
 
+// ============ 下载（代理下载解决手机端问题） ============
 function downloadMusic() {
     if (!state.currentAudioUrl) { showToast('没有音频可下载', 'warn'); return; }
     const title = state.currentTitle || 'music';
-    // 通过后端代理下载，解决手机端跨域和Content-Disposition问题
     const downloadUrl = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(state.currentAudioUrl)}&title=${encodeURIComponent(title)}`;
     const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = title + '.mp3';
-    a.target = '_blank';
-    a.rel = 'noopener';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = downloadUrl; a.download = title + '.mp3'; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     showToast('📥 开始下载...', 'success');
 }
 
 // ============ 工具 ============
 function showToast(msg, type = '') {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show ' + type;
+    t.textContent = msg; t.className = 'toast show ' + type;
     clearTimeout(t._timer);
     t._timer = setTimeout(() => { t.className = 'toast'; }, 3000);
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 </script>
 </body>
 </html>

@@ -49,7 +49,21 @@ function write(data) {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
-const FREE_LIMIT = 3;  // 免费次数
+// 分享记录存储路径
+const SHARE_DB_PATH = path.join(__dirname, 'data', 'shares.json');
+
+function readShares() {
+    try {
+        if (!fs.existsSync(SHARE_DB_PATH)) return {};
+        return JSON.parse(fs.readFileSync(SHARE_DB_PATH, 'utf8'));
+    } catch (e) {
+        return {};
+    }
+}
+
+function writeShares(data) {
+    fs.writeFileSync(SHARE_DB_PATH, JSON.stringify(data, null, 2));
+}
 
 module.exports = {
     init,
@@ -260,5 +274,29 @@ module.exports = {
         const totalBalance = Object.values(db.users).reduce((sum, u) => sum + (u.balance || 0), 0);
 
         return { usedCodes, totalCodes, totalUsers, totalGenerations, freeListCount, totalBalance, freeLimit: FREE_LIMIT, pricePerSong: PRICE_PER_SONG };
+    },
+
+    // ===== 分享记录 =====
+
+    // 保存分享记录
+    saveShareRecord(record) {
+        const shares = readShares();
+        shares[record.id] = record;
+        writeShares(shares);
+    },
+
+    // 获取分享记录
+    getShareRecord(id) {
+        const shares = readShares();
+        return shares[id] || null;
+    },
+
+    // 增加播放计数
+    incrementSharePlays(id) {
+        const shares = readShares();
+        if (shares[id]) {
+            shares[id].plays = (shares[id].plays || 0) + 1;
+            writeShares(shares);
+        }
     }
 };
