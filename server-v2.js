@@ -1,7 +1,7 @@
 /**
- * 音谋加 - 主服务器 v2.0
- * 功能：AI音乐生成 + 3次免费 + 解锁码付费
- * 部署：支持 Vercel / Railway / 任意 Node.js 主机
+ * 音谋加 - 主服务器 v2.1
+ * 功能：AI音乐生成 + 5次免费 + 0.8元/首 + 免费名单管理
+ * 部署：支持 Render / Railway / 任意 Node.js 主机
  */
 
 const express = require('express');
@@ -101,17 +101,33 @@ app.post('/api/generate', async (req, res) => {
         return res.json({
             success: false,
             needPayment: true,
-            error: '免费次数已用完，请输入解锁码继续使用',
+            error: '免费次数已用完，请充值或输入解锁码',
             data: {
                 freeUsed: quota.freeUsed,
                 freeLimit: quota.freeLimit,
-                message: `您已使用 ${quota.freeUsed} 次，还剩 0 次。输入解锁码可继续使用。`
+                balance: quota.balance,
+                pricePerSong: 0.8,
+                message: `您已使用 ${quota.freeUsed} 次，余额 ¥${quota.balance}。每首 ¥0.8，或输入解锁码`
             }
         });
     }
 
     // 消耗配额
     const updatedQuota = db.consumeFree(deviceId);
+    if (!updatedQuota) {
+        return res.json({
+            success: false,
+            needPayment: true,
+            error: '免费次数已用完，余额不足',
+            data: {
+                freeUsed: quota.freeUsed,
+                freeLimit: quota.freeLimit,
+                balance: quota.balance,
+                pricePerSong: 0.8,
+                message: `免费次数已用完。充值后可继续使用，每首 ¥0.8`
+            }
+        });
+    }
 
     const recordId = uuidv4();
 
@@ -151,9 +167,10 @@ app.post('/api/generate', async (req, res) => {
                 image_url: result.imageUrl,
                 lyrics: result.lyrics || '',
                 remaining: updatedQuota.remaining,
+                balance: updatedQuota.balance,
                 message: updatedQuota.remaining > 0
                     ? `🎵 生成成功！还剩 ${updatedQuota.remaining} 次免费机会`
-                    : '⚠️ 免费次数已用完，如需继续请输入解锁码'
+                    : `🎵 生成成功！余额 ¥${updatedQuota.balance.toFixed(2)}`
             }
         });
 
@@ -171,9 +188,10 @@ app.get('/api/config', (req, res) => {
     res.json({
         success: true,
         data: {
-            version: '2.0',
-            freeLimit: 3,
-            paymentTip: '输入解锁码即可继续使用',
+            version: '2.1',
+            freeLimit: 5,
+            pricePerSong: 0.8,
+            paymentTip: '免费5次，之后每首 ¥0.8',
             welcome: '🎵 音谋加 - 让每个人都能用音乐表达自己'
         }
     });
@@ -223,6 +241,117 @@ app.get('/api/admin/stats', (req, res) => {
     }
 
     res.json({ success: true, data: db.getStats() });
+});
+
+/**
+ * 免费名单 - 获取
+ * GET /api/admin/free-list
+ */
+app.get('/api/admin/free-list', (req, res) => {
+    if (!isAdmin(req)) {
+        return res.status(401).json({ success: false, error: '未授权' });
+    }
+    res.json({ success: true, data: db.getFreeList() });
+});
+
+/**
+ * 免费名单 - 添加
+ * POST /api/admin/free-add
+ * Body: { device_id, name }
+ */
+app.post('/api/admin/free-add', (req, res) => {
+    if (!isAdmin(req)) {
+        return res.status(401).json({ success: false, error: '未授权' });
+    }
+    try {
+        const { device_id, name } = req.body;
+        if (!device_id) return res.status(400).json({ success: false, error: '缺少 device_id' });
+        const result = db.addFreeUser(device_id, name);
+        if (result.success) {
+            res.json({ success: true, message: '添加成功' });
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+/**
+ * 免费名单 - 删除
+ * POST /api/admin/free-remove
+ * Body: { device_id }
+ */
+app.post('/api/admin/free-remove', (req, res) => {
+    if (!isAdmin(req)) {
+        return res.status(401).json({ success: false, error: '未授权' });
+    }
+    try {
+        const { device_id } = req.body;
+        if (!device_id) return res.status(400).json({ success: false, error: '缺少 device_id' });
+        const result = db.removeFreeUser(device_id);
+        if (result.success) {
+            res.json({ success: true, message: '已移除' });
+        } else {
+            res.status(400).json(result);
+        }
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+/**
+ * 用户列表
+ * GET /api/admin/users
+ */
+app.get('/api/admin/users', (req, res) => {
+    if (!isAdmin(req)) {
+        return res.status(401).json({ success: false, error: '未授权' });
+    }
+    res.json({ success: true, data: db.getUserList() });
+});
+
+/**
+ * 用户充值
+ * POST /api/admin/recharge
+ * Body: { device_id, amount }
+ */
+app.post('/api/admin/recharge', (req, res) => {
+    if (!isAdmin(req)) {
+        return res.status(401).json({ success: false, error: '未授权' });
+    }
+    try {
+        const { device_id, amount } = req.body;
+        if (!device_id || !amount || amount <= 0) {
+            return res.status(400).json({ success: false, error: '参数无效' });
+        }
+        const result = db.addBalance(device_id, parseFloat(amount));
+        res.json({ success: true, data: result });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+/**
+ * 代理下载 MP3（解决手机端跨域/防盗链）
+ * GET /api/proxy-download?url=xxx&title=xxx
+ */
+app.get('/api/proxy-download', async (req, res) => {
+    try {
+        const { url, title } = req.query;
+        if (!url) return res.status(400).json({ success: false, error: '缺少 url' });
+
+        const axios = require('axios');
+        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 60000 });
+
+        const safeTitle = (title || 'music').replace(/[^\w\u4e00-\u9fff\-_ ]/g, '');
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(safeTitle + '.mp3')}`);
+        res.setHeader('Content-Length', response.data.length);
+        res.send(response.data);
+    } catch (e) {
+        res.status(500).json({ success: false, error: '下载失败: ' + e.message });
+    }
 });
 
 /**

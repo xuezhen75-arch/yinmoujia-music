@@ -558,7 +558,7 @@
 
     <!-- 首次提示 -->
     <div class="first-tip" id="firstTip" style="display:none">
-        🎁 新用户免费生成 3 次，快来试试吧！
+        🎁 新用户免费生成 5 次，快来试试吧！
     </div>
 
     <!-- 配额卡片 -->
@@ -692,7 +692,7 @@
 
     <div class="footer">
         © 大树音乐 · 纳心治愈系 | 由 Suno AI 驱动<br>
-        <span style="color:#555">免费3次 · 解锁码续费</span>
+        <span style="color:#555">免费5次 · 之后 ¥0.8/首</span>
     </div>
 </div>
 
@@ -762,15 +762,16 @@
         <div class="unlock-icon">🔑</div>
         <div class="unlock-title" id="unlockTitle">免费次数已用完</div>
         <div class="unlock-desc" id="unlockDesc">
-            您已使用全部 <strong>3</strong> 次免费生成<br>
-            请扫码联系作者获取解锁码
+            您已使用全部 <strong>5</strong> 次免费生成<br>
+            之后每首仅需 <strong>¥0.8</strong>，扫码联系获取
         </div>
 
         <div class="pay-guide">
-            <div class="pay-guide-title">💡 如何获取解锁码</div>
+            <div class="pay-guide-title">💡 如何继续使用</div>
             <p>① 扫码 → 加微信（或查看朋友圈）</p>
-            <p>② 转账 <strong>1元</strong> → 获取专属解锁码</p>
-            <p>③ 输入解锁码 → 继续无限创作</p>
+            <p>② 转账充值 → 每首 <strong>¥0.8</strong></p>
+            <p>③ 也可购买年卡解锁码 → 无限创作</p>
+            <p>④ 输入解锁码 或 等待管理员充值</p>
         </div>
 
         <input type="text" class="code-input" id="codeInput" placeholder="输入解锁码" maxlength="20">
@@ -784,7 +785,7 @@
 // ============ 配置 ============
 const API_BASE = '';  // 同源，后端直接提供静态文件
 const DEVICE_KEY = 'yinmoujia_device_v2';
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 5;
 
 // ============ 状态 ============
 const state = {
@@ -792,10 +793,14 @@ const state = {
     mood: null, scene: null, style: null, keyword: null,
     isPlaying: false,
     currentAudioUrl: null,
+    currentTitle: null,
+    currentImageUrl: null,
     audioPlayer: null,
     remaining: null,
     unlocked: false,
-    unlockedExpiry: null
+    unlockedExpiry: null,
+    balance: 0,
+    isFreeUser: false
 };
 
 // ============ 初始化 ============
@@ -824,6 +829,8 @@ async function loadQuota() {
             state.remaining = q.remaining;
             state.unlocked = q.unlocked;
             state.unlockedExpiry = q.unlockExpiry;
+            state.balance = q.balance || 0;
+            state.isFreeUser = q.isFreeUser || false;
             renderQuota(q);
         }
     } catch (e) {
@@ -856,6 +863,14 @@ function renderQuota(q) {
         const expDate = q.unlockExpiry ? new Date(q.unlockExpiry).toLocaleDateString('zh-CN') : '';
         textEl.innerHTML = `<strong style="color:#00ff88">已解锁</strong> · 有效期至 ${expDate}`;
         iconEl.textContent = '🔓';
+        if (tipEl) tipEl.style.display = 'none';
+    } else if (q.isFreeUser) {
+        textEl.innerHTML = `<strong style="color:#00ff88">VIP用户</strong> · 无限创作`;
+        iconEl.textContent = '👑';
+        if (tipEl) tipEl.style.display = 'none';
+    } else if (q.balance > 0) {
+        textEl.innerHTML = `余额 <strong style="color:#ffd700">¥${q.balance.toFixed(2)}</strong> · 免费 ${q.remaining}/${q.freeLimit}`;
+        iconEl.textContent = '💰';
         if (tipEl) tipEl.style.display = 'none';
     } else {
         textEl.innerHTML = `剩余 <strong>${q.remaining}</strong> / ${q.freeLimit} 次免费`;
@@ -988,7 +1003,7 @@ async function generateMusic() {
     if (!state.mood || !state.scene || !state.style) return;
 
     // 检查配额
-    if (!state.unlocked && state.remaining <= 0) {
+    if (!state.unlocked && !state.isFreeUser && state.remaining <= 0 && state.balance < 0.8) {
         openUnlockModal();
         return;
     }
@@ -1050,6 +1065,8 @@ function showResult(data) {
     document.getElementById('resultPage').classList.add('active');
 
     document.getElementById('musicTitle').textContent = data.title || '专属音乐';
+    state.currentTitle = data.title || '专属音乐';
+    state.currentImageUrl = data.image_url || null;
 
     // 歌词展示
     const lyricsEl = document.getElementById('lyricsDisplay');
@@ -1066,8 +1083,11 @@ function showResult(data) {
         if (data.remaining > 0) {
             tipEl.textContent = `🎵 还剩 ${data.remaining} 次免费机会`;
             tipEl.className = 'remaining-tip';
+        } else if (data.balance !== undefined && data.balance > 0) {
+            tipEl.textContent = `🎵 余额 ¥${data.balance.toFixed(2)}，可继续创作`;
+            tipEl.className = 'remaining-tip';
         } else {
-            tipEl.textContent = '⚠️ 免费次数已用完，请输入解锁码继续';
+            tipEl.textContent = '⚠️ 免费次数已用完，请充值继续（¥0.8/首）';
             tipEl.className = 'remaining-tip warn';
         }
     } else {
@@ -1101,6 +1121,9 @@ function showResult(data) {
     // 更新配额
     if (data.remaining !== undefined) {
         state.remaining = data.remaining;
+    }
+    if (data.balance !== undefined) {
+        state.balance = data.balance;
     }
 }
 
@@ -1160,20 +1183,63 @@ function goBack() {
 }
 
 function shareMusic() {
+    const title = state.currentTitle || '音谋加 AI音乐';
+    const shareData = {
+        title: '🎵 ' + title,
+        text: `我用音谋加创作了「${title}」，AI生成的专属音乐，快来试试！`,
+        url: window.location.href
+    };
+
     if (navigator.share) {
-        navigator.share({ title: '🎵 ' + document.getElementById('musicTitle').textContent, text: '我用音谋加创作了这首歌，快来听听！', url: window.location.href });
+        navigator.share(shareData).catch(() => {
+            fallbackCopy(shareData.text + ' ' + shareData.url);
+        });
     } else {
-        navigator.clipboard?.writeText(window.location.href).then(() => showToast('🔗 链接已复制！', 'success'));
+        fallbackCopy(shareData.text + ' ' + shareData.url);
     }
+}
+
+function fallbackCopy(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('🔗 链接已复制到剪贴板！', 'success');
+        }).catch(() => {
+            manualCopy(text);
+        });
+    } else {
+        manualCopy(text);
+    }
+}
+
+function manualCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showToast('🔗 链接已复制！', 'success');
+    } catch (e) {
+        showToast('请手动复制分享链接', 'warn');
+    }
+    document.body.removeChild(ta);
 }
 
 function downloadMusic() {
     if (!state.currentAudioUrl) { showToast('没有音频可下载', 'warn'); return; }
+    const title = state.currentTitle || 'music';
+    // 通过后端代理下载，解决手机端跨域和Content-Disposition问题
+    const downloadUrl = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(state.currentAudioUrl)}&title=${encodeURIComponent(title)}`;
     const a = document.createElement('a');
-    a.href = state.currentAudioUrl;
-    a.download = (document.getElementById('musicTitle').textContent || 'music') + '.mp3';
+    a.href = downloadUrl;
+    a.download = title + '.mp3';
     a.target = '_blank';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    showToast('📥 开始下载...', 'success');
 }
 
 // ============ 工具 ============
