@@ -73,11 +73,28 @@
 const API_BASE = '';
 const params = new URLSearchParams(window.location.search);
 const shareId = params.get('id');
+const shareDataParam = params.get('s');
 
-if (!shareId) {
-    document.getElementById('app').innerHTML = '<div class="error">分享内容不存在</div>';
-} else {
+if (shareDataParam) {
+    // 从Base64参数直接解析歌曲数据（不依赖服务器存储）
+    try {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(shareDataParam))));
+        const songs = decoded.map(s => ({
+            title: s.t || '未命名',
+            audioUrl: s.a || '',
+            imageUrl: s.i || '',
+            lyrics: s.l || ''
+        }));
+        currentShare = { songs, createdAt: new Date().toISOString() };
+        renderShare(currentShare);
+    } catch (e) {
+        document.getElementById('app').innerHTML = '<div class="error">分享数据解析失败</div>';
+    }
+} else if (shareId) {
+    // 兼容旧模式：从服务器获取分享记录
     loadShare(shareId);
+} else {
+    document.getElementById('app').innerHTML = '<div class="error">分享内容不存在</div>';
 }
 
 let audioPlayer = null;
@@ -247,11 +264,47 @@ function seekAudio(e) {
 function downloadCurrent() {
     const song = currentShare.songs[currentSongIndex];
     if (!song || !song.audioUrl) return;
+
+    // 微信内置浏览器检测
+    if (/MicroMessenger/i.test(navigator.userAgent)) {
+        const title = song.title || 'music';
+        const downloadUrl = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(song.audioUrl)}&title=${encodeURIComponent(title)}`;
+        const guide = document.createElement('div');
+        guide.id = 'wechatGuide';
+        guide.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;';
+        guide.innerHTML = `
+            <div style="font-size:48px;margin-bottom:20px;">📲</div>
+            <div style="color:#fff;font-size:18px;font-weight:bold;margin-bottom:12px;">微信内无法直接下载</div>
+            <div style="color:#ccc;font-size:14px;text-align:center;line-height:1.8;margin-bottom:24px;">
+                请点击右上角 ··· 选择「在浏览器打开」<br>
+                或复制下方链接到浏览器下载
+            </div>
+            <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;width:100%;max-width:350px;word-break:break-all;color:#00d9ff;font-size:12px;margin-bottom:20px;">${downloadUrl}</div>
+            <button onclick="copyDlLink('${downloadUrl}')" style="background:linear-gradient(90deg,#00d9ff,#00ff88);border:none;border-radius:12px;padding:14px 40px;font-size:16px;font-weight:bold;color:#1a1a2e;cursor:pointer;">📋 复制下载链接</button>
+            <button onclick="document.getElementById('wechatGuide').remove()" style="background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:14px 40px;font-size:14px;color:#888;cursor:pointer;margin-top:12px;">关闭</button>
+        `;
+        document.body.appendChild(guide);
+        return;
+    }
+
     const url = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(song.audioUrl)}&title=${encodeURIComponent(song.title || 'music')}`;
     const a = document.createElement('a');
     a.href = url; a.download = (song.title || 'music') + '.mp3'; a.target = '_blank';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     showToast('📥 开始下载...', 'success');
+}
+
+function copyDlLink(url) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => showToast('📥 链接已复制！请到浏览器打开下载', 'success'));
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showToast('📥 链接已复制！请到浏览器打开下载', 'success'); }
+        catch(e) { showToast('请手动复制链接', 'warn'); }
+        document.body.removeChild(ta);
+    }
 }
 
 function shareAgain() {

@@ -788,6 +788,21 @@ function showResult(data) {
     state.shareUrl = data.share_url || null;
     state.allSongs = songs;
 
+    // 生成本地免服务器分享链接（Base64编码歌曲数据，不依赖shares.json）
+    try {
+        const sharePayload = songs.map(s => ({
+            t: s.title || '未命名',
+            a: s.audioUrl || '',
+            i: s.imageUrl || '',
+            l: s.lyrics || ''
+        }));
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(sharePayload))));
+        state.localShareUrl = `${window.location.origin}/share.html?s=${encoded}`;
+    } catch(e) {
+        console.warn('本地分享链接生成失败:', e);
+        state.localShareUrl = null;
+    }
+
     // 如果有2首歌，显示选择器
     const pickerEl = document.getElementById('songsPicker');
     const cardsEl = document.getElementById('songsCards');
@@ -953,7 +968,9 @@ function goBack() {
 
 // ============ 分享（带专属链接） ============
 function shareMusic() {
-    if (!state.shareUrl) {
+    // 优先用本地Base64分享链接（不依赖服务器存储，永久有效）
+    const shareLink = state.localShareUrl || state.shareUrl;
+    if (!shareLink) {
         showToast('⚠️ 分享链接生成失败，请重新生成', 'warn');
         return;
     }
@@ -962,7 +979,7 @@ function shareMusic() {
     const shareData = {
         title: '🎵 ' + title,
         text: `我用音谋加创作了「${title}」，AI生成的专属音乐，快来听听！`,
-        url: state.shareUrl
+        url: shareLink
     };
 
     if (navigator.share) {
@@ -991,11 +1008,55 @@ function manualCopy(text) {
 function downloadMusic() {
     if (!state.currentAudioUrl) { showToast('没有音频可下载', 'warn'); return; }
     const title = state.currentTitle || 'music';
+
+    // 微信内置浏览器检测：微信不支持a.download，需要引导用浏览器打开
+    if (isWechat()) {
+        showWechatDownloadGuide(state.currentAudioUrl, title);
+        return;
+    }
+
     const downloadUrl = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(state.currentAudioUrl)}&title=${encodeURIComponent(title)}`;
     const a = document.createElement('a');
     a.href = downloadUrl; a.download = title + '.mp3'; a.target = '_blank'; a.rel = 'noopener';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     showToast('📥 开始下载...', 'success');
+}
+
+function isWechat() {
+    return /MicroMessenger/i.test(navigator.userAgent);
+}
+
+function showWechatDownloadGuide(audioUrl, title) {
+    // 微信内：复制链接提示用户用浏览器打开
+    const downloadUrl = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(audioUrl)}&title=${encodeURIComponent(title)}`;
+    const guide = document.createElement('div');
+    guide.id = 'wechatGuide';
+    guide.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;';
+    guide.innerHTML = `
+        <div style="font-size:48px;margin-bottom:20px;">📲</div>
+        <div style="color:#fff;font-size:18px;font-weight:bold;margin-bottom:12px;">微信内无法直接下载</div>
+        <div style="color:#ccc;font-size:14px;text-align:center;line-height:1.8;margin-bottom:24px;">
+            请点击右上角 ··· 选择「在浏览器打开」<br>
+            或复制下方链接到浏览器下载
+        </div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;width:100%;max-width:350px;word-break:break-all;color:#00d9ff;font-size:12px;margin-bottom:20px;">${downloadUrl}</div>
+        <button onclick="copyDownloadLink('${downloadUrl}')" style="background:linear-gradient(90deg,#00d9ff,#00ff88);border:none;border-radius:12px;padding:14px 40px;font-size:16px;font-weight:bold;color:#1a1a2e;cursor:pointer;">📋 复制下载链接</button>
+        <button onclick="document.getElementById('wechatGuide').remove()" style="background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:14px 40px;font-size:14px;color:#888;cursor:pointer;margin-top:12px;">关闭</button>
+    `;
+    document.body.appendChild(guide);
+}
+
+function copyDownloadLink(url) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => showToast('📥 链接已复制！请到浏览器打开下载', 'success'));
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.cssText = 'position:fixed;left:-9999px';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); showToast('📥 链接已复制！请到浏览器打开下载', 'success'); }
+        catch(e) { showToast('请手动复制链接', 'warn'); }
+        document.body.removeChild(ta);
+    }
 }
 
 // ============ 工具 ============
