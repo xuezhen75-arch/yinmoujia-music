@@ -197,11 +197,25 @@ class AIMusicAPI {
                     }
 
                     // 如果有歌曲数据但有音频URL，也视为可用（streaming状态但有audioUrl）
+                    // 但优先等两首都出现，至少等第一首complete再给15秒让第二首赶上来
                     if (data.list && data.list.some(s => s.audioUrl)) {
-                        const songs = this.parseSongs(data, taskId);
-                        if (songs.some(s => s.audioUrl)) {
-                            console.log('部分歌曲已有音频，提前返回', songs.length, '首');
+                        const streamingCount = data.list.filter(s => s.state === 'streaming' || s.state === 'complete' || s.state === 'completed').length;
+                        const completeCount = data.list.filter(s => s.state === 'complete' || s.state === 'completed').length;
+
+                        // 如果两首都开始streaming了，且有音频，返回
+                        if (streamingCount >= 2 && data.list.filter(s => s.audioUrl).length >= 2) {
+                            const songs = this.parseSongs(data, taskId);
+                            console.log('两首都已有音频，返回', songs.length, '首');
                             return { success: true, songs };
+                        }
+
+                        // 如果第一首complete了，等第二首最多再查4次（20秒）
+                        if (completeCount >= 1 && attempts > 12) {
+                            const songs = this.parseSongs(data, taskId);
+                            if (songs.some(s => s.audioUrl)) {
+                                console.log('等待超限，返回已有', songs.length, '首歌');
+                                return { success: true, songs };
+                            }
                         }
                     }
 
