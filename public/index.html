@@ -953,18 +953,17 @@ function goBack() {
 
 // ============ 分享（带专属链接） ============
 function shareMusic() {
-    const title = state.currentTitle || '音谋加 AI音乐';
-    const shareUrl = state.shareUrl || `${window.location.origin}/share.html?id=${state.shareId || ''}`;
-    const shareData = {
-        title: '🎵 ' + title,
-        text: `我用音谋加创作了「${title}」，AI生成的专属音乐，快来听听！`,
-        url: shareUrl
-    };
-
     if (!state.shareUrl) {
         showToast('⚠️ 分享链接生成失败，请重新生成', 'warn');
         return;
     }
+
+    const title = state.currentTitle || '音谋加 AI音乐';
+    const shareData = {
+        title: '🎵 ' + title,
+        text: `我用音谋加创作了「${title}」，AI生成的专属音乐，快来听听！`,
+        url: state.shareUrl
+    };
 
     if (navigator.share) {
         navigator.share(shareData).catch(() => fallbackCopy(shareData.text + '\n' + shareUrl));
