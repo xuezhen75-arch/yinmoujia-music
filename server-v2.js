@@ -17,7 +17,13 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'yinmoujia-admin-2024';
 const API_KEY = process.env.AI_MUSIC_API_KEY || '';
 
-const SITE_URL = process.env.SITE_URL || '';
+// 动态获取站点URL（支持反向代理）
+function getSiteUrl(req) {
+    if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/$/, '');
+    const proto = req.get('x-forwarded-proto') || req.protocol;
+    const host = req.get('x-forwarded-host') || req.get('host');
+    return `${proto}://${host}`;
+}
 
 let config = { apiKey: API_KEY };
 const musicAPI = new AIMusicAPI(API_KEY);
@@ -186,6 +192,11 @@ app.post('/api/generate', async (req, res) => {
 
         console.log('生成成功，获得', result.songs.length, '首歌');
 
+        // 检查是否有有效歌曲
+        if (!result.songs || result.songs.length === 0) {
+            return res.status(500).json({ success: false, error: '生成完成但未获取到音频，请重试' });
+        }
+
         // 保存分享记录
         const shareData = {
             id: recordId,
@@ -204,7 +215,8 @@ app.post('/api/generate', async (req, res) => {
         };
         db.saveShareRecord(shareData);
 
-        const shareUrl = `${SITE_URL}/share.html?id=${recordId}`;
+        const siteUrl = getSiteUrl(req);
+        const shareUrl = `${siteUrl}/share.html?id=${recordId}`;
 
         res.json({
             success: true,

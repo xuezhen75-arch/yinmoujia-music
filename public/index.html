@@ -722,10 +722,17 @@ async function generateMusic() {
 // ============ 结果 ============
 function showResult(data) {
     document.getElementById('loadingOverlay').classList.remove('active');
+
+    const songs = data.songs || [];
+    if (songs.length === 0 || !songs[0]?.audioUrl) {
+        showToast('⚠️ 生成完成但未获取到音频，请重试', 'error');
+        return;
+    }
+
     document.getElementById('resultPage').classList.add('active');
 
     state.shareUrl = data.share_url || null;
-    state.allSongs = data.songs || [];
+    state.allSongs = songs;
 
     // 如果有2首歌，显示选择器
     const pickerEl = document.getElementById('songsPicker');
@@ -762,7 +769,7 @@ function showResult(data) {
     } else {
         pickerEl.style.display = 'none';
         // 只有一首歌，直接展示
-        applySong(data.songs[0] || data);
+        applySong(songs[0]);
         showRemainingInfo(data);
     }
 }
@@ -893,12 +900,17 @@ function goBack() {
 // ============ 分享（带专属链接） ============
 function shareMusic() {
     const title = state.currentTitle || '音谋加 AI音乐';
-    const shareUrl = state.shareUrl || window.location.href;
+    const shareUrl = state.shareUrl || `${window.location.origin}/share.html?id=${state.shareId || ''}`;
     const shareData = {
         title: '🎵 ' + title,
         text: `我用音谋加创作了「${title}」，AI生成的专属音乐，快来听听！`,
         url: shareUrl
     };
+
+    if (!state.shareUrl) {
+        showToast('⚠️ 分享链接生成失败，请重新生成', 'warn');
+        return;
+    }
 
     if (navigator.share) {
         navigator.share(shareData).catch(() => fallbackCopy(shareData.text + '\n' + shareUrl));

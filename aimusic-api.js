@@ -274,8 +274,8 @@ class AIMusicAPI {
             // 用户提供了自定义歌词
             prompt = `${lyrics.trim()}\n\n[Style: ${moodData.tags}${styleDesc}]`;
         } else {
-            // AI 自动生成歌词（明确要求人声和歌词）
-            prompt = `${moodData.prompt}${sceneDesc}${styleDesc}${keywordDesc}, with vocals and AI-generated lyrics, include singing`;
+            // AI 自动生成歌词（强指令：必须有人声和歌词）
+            prompt = `${moodData.prompt}${sceneDesc}${styleDesc}${keywordDesc}. With female vocals singing original lyrics. Do NOT make instrumental. Include full song lyrics with verses and chorus.`;
         }
 
         return { prompt, tags: moodData.tags };
