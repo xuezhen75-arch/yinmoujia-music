@@ -245,7 +245,7 @@
         <button class="my-works-btn" onclick="showProfile()">👤 我的作品</button>
     </div>
 
-    <div class="first-tip" id="firstTip" style="display:none">🎁 新用户免费生成 5 次，快来试试吧！</div>
+    <div class="first-tip" id="firstTip" style="display:none">🎁 新用户免费生成 3 次，快来试试吧！</div>
 
     <!-- 配额卡片 -->
     <div class="quota-card" id="quotaCard">
@@ -376,7 +376,7 @@
 
     <div class="footer">
         © 大树音乐 · 纳心治愈系 | 由 Suno AI 驱动<br>
-        <span style="color:#555">免费5次 · 之后 ¥0.8/首</span>
+        <span style="color:#555">免费3次 · 之后 ¥0.8/首</span>
     </div>
 </div>
 
@@ -489,7 +489,7 @@
     <div class="nickname-content">
         <div class="nickname-logo">🎵</div>
         <div class="nickname-title">欢迎来到音谋加</div>
-        <div class="nickname-desc">输入你的昵称开始创作<br>免费体验 5 次 AI 音乐生成</div>
+        <div class="nickname-desc">输入你的昵称开始创作<br>免费体验 3 次 AI 音乐生成</div>
         <input type="text" class="nickname-input" id="nicknameInput" placeholder="输入你的昵称" maxlength="12">
         <button class="nickname-btn" onclick="submitNickname()">开始创作</button>
         <div class="nickname-status" id="nicknameStatus"></div>
@@ -525,7 +525,7 @@
 const API_BASE = '';
 const DEVICE_KEY = 'yinmoujia_device_v2';
 const NICKNAME_KEY = 'yinmoujia_nickname';
-const FREE_LIMIT = 5;
+const FREE_LIMIT = 3;
 
 // ============ 状态 ============
 const state = {
@@ -1105,7 +1105,8 @@ async function loadMySongs() {
 
     try {
         const deviceId = localStorage.getItem(DEVICE_KEY);
-        const res = await fetch(`${API_BASE}/api/my-songs?device_id=${encodeURIComponent(deviceId)}`);
+        const nickname = encodeURIComponent(state.nickname || '');
+        const res = await fetch(`${API_BASE}/api/my-songs?device_id=${encodeURIComponent(deviceId)}&nickname=${nickname}`);
         const json = await res.json();
         if (!json.success) {
             listEl.innerHTML = '<div class="songs-empty"><div class="songs-empty-icon">😔</div>加载失败，请稍后重试</div>';

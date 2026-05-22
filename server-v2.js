@@ -1,6 +1,7 @@
 /**
- * 音谋加 - 主服务器 v2.3
- * 功能：昵称登录 + AI音乐生成(双歌曲) + 5次免费 + 0.8元/首 + VIP名单 + 分享落地页
+ * 音谋加 - 主服务器 v3.0
+ * 功能：昵称登录 + AI音乐生成(双歌曲) + 3次免费 + 0.8元/首 + VIP名单 + 分享落地页
+ * v3.0: MongoDB 持久化存储 + JSON兜底
  */
 
 const express = require('express');
@@ -10,7 +11,11 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 
 const AIMusicAPI = require('./aimusic-api');
-const db = require('./database-simple');
+
+// DB: 优先 MongoDB，没有 URI 则 JSON 文件兜底
+const USE_MONGO = !!process.env.MONGODB_URI;
+const db = USE_MONGO ? require('./database-mongo') : require('./database-simple');
+console.log(`[DB] 使用 ${USE_MONGO ? 'MongoDB' : 'JSON文件'} 存储`);
 
 // ============ 配置 ============
 const PORT = process.env.PORT || 3000;
@@ -33,7 +38,7 @@ const musicAPI = new AIMusicAPI(SUNO_API_ID, SUNO_API_TOKEN);
 
 // ============ 初始化 ============
 const app = express();
-db.init();
+// DB init will be called before listen
 
 app.use(cors());
 app.use(express.json());
@@ -64,13 +69,13 @@ function isAdmin(req) {
  * 获取配额信息
  * GET /api/quota?device_id=xxx&nickname=xxx
  */
-app.get('/api/quota', (req, res) => {
+app.get('/api/quota', async (req, res) => {
     try {
         const deviceId = getDeviceId(req);
         const nickname = req.query.nickname || '';
         // 如果有昵称，同步到用户数据
         if (nickname) db.setNickname(deviceId, nickname);
-        const quota = db.getUserQuota(deviceId);
+        const quota = await db.getUserQuota(deviceId, nickname);
         res.json({ success: true, data: quota });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
@@ -82,13 +87,13 @@ app.get('/api/quota', (req, res) => {
  * POST /api/set-nickname
  * Body: { device_id, nickname }
  */
-app.post('/api/set-nickname', (req, res) => {
+app.post('/api/set-nickname', async (req, res) => {
     try {
         const { device_id, nickname } = req.body;
         if (!device_id || !nickname) {
             return res.status(400).json({ success: false, error: '缺少参数' });
         }
-        db.setNickname(device_id, nickname.trim());
+        await db.setNickname(device_id, nickname.trim());
         res.json({ success: true, data: { nickname: nickname.trim() } });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
@@ -100,13 +105,13 @@ app.post('/api/set-nickname', (req, res) => {
  * POST /api/unlock
  * Body: { device_id, code }
  */
-app.post('/api/unlock', (req, res) => {
+app.post('/api/unlock', async (req, res) => {
     try {
         const { device_id, code } = req.body;
         if (!device_id || !code) {
             return res.status(400).json({ success: false, error: '缺少参数' });
         }
-        const result = db.verifyCode(code, device_id);
+        const result = await db.verifyCode(code, device_id);
         if (result.success) {
             res.json({ success: true, data: { message: result.message, expiry: result.expiry } });
         } else {
@@ -132,10 +137,10 @@ app.post('/api/generate', async (req, res) => {
     const deviceId = device_id;
 
     // 同步昵称
-    if (nickname) db.setNickname(deviceId, nickname.trim());
+    if (nickname) await db.setNickname(deviceId, nickname.trim());
 
     // 检查配额
-    const quota = db.getUserQuota(deviceId);
+    const quota = await db.getUserQuota(deviceId, nickname);
     if (!quota.canGenerate) {
         return res.json({
             success: false,
@@ -152,7 +157,7 @@ app.post('/api/generate', async (req, res) => {
     }
 
     // 消耗配额
-    const updatedQuota = db.consumeFree(deviceId);
+    const updatedQuota = await db.consumeFree(deviceId, nickname);
     if (!updatedQuota) {
         return res.json({
             success: false,
@@ -252,13 +257,13 @@ app.post('/api/generate', async (req, res) => {
  * 获取分享记录
  * GET /api/share/:id
  */
-app.get('/api/share/:id', (req, res) => {
+app.get('/api/share/:id', async (req, res) => {
     try {
-        const record = db.getShareRecord(req.params.id);
+        const record = await db.getShareRecord(req.params.id);
         if (!record) {
             return res.status(404).json({ success: false, error: '分享内容不存在' });
         }
-        db.incrementSharePlays(req.params.id);
+        await db.incrementSharePlays(req.params.id);
         res.json({ success: true, data: record });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });
@@ -274,9 +279,9 @@ app.get('/api/config', (req, res) => {
         success: true,
         data: {
             version: '2.3',
-            freeLimit: 5,
+            freeLimit: 3,
             pricePerSong: 0.8,
-            paymentTip: '免费5次，之后每首 ¥0.8',
+            paymentTip: '免费3次，之后每首 ¥0.8',
             welcome: '音谋加 - 让每个人都能用音乐表达自己'
         }
     });
@@ -308,10 +313,10 @@ app.get('/api/proxy-download', async (req, res) => {
 
 // ============ 管理员接口 ============
 
-app.post('/api/admin/gen-codes', (req, res) => {
+app.post('/api/admin/gen-codes', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
     try {
-        const result = db.generateCode(req.body);
+        const result = await db.generateCode(req.body);
         console.log('生成解锁码:', result.codes);
         res.json({ success: true, data: result });
     } catch (e) {
@@ -319,33 +324,33 @@ app.post('/api/admin/gen-codes', (req, res) => {
     }
 });
 
-app.get('/api/admin/codes', (req, res) => {
+app.get('/api/admin/codes', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: db.getUnusedCodes() });
+    res.json({ success: true, data: await db.getUnusedCodes() });
 });
 
-app.get('/api/admin/stats', (req, res) => {
+app.get('/api/admin/stats', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: db.getStats() });
+    res.json({ success: true, data: await db.getStats() });
 });
 
 /**
  * 免费名单 - 获取
  */
-app.get('/api/admin/free-list', (req, res) => {
+app.get('/api/admin/free-list', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: db.getFreeList() });
+    res.json({ success: true, data: await db.getFreeList() });
 });
 
 /**
  * 免费名单 - 添加（按昵称）
  */
-app.post('/api/admin/free-add', (req, res) => {
+app.post('/api/admin/free-add', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
     try {
         const { nickname } = req.body;
         if (!nickname) return res.status(400).json({ success: false, error: '请输入昵称' });
-        const result = db.addFreeUser(nickname);
+        const result = await db.addFreeUser(nickname);
         if (result.success) res.json({ success: true, message: `已将「${nickname}」加入免费名单` });
         else res.status(400).json(result);
     } catch (e) {
@@ -356,12 +361,12 @@ app.post('/api/admin/free-add', (req, res) => {
 /**
  * 免费名单 - 删除（按昵称）
  */
-app.post('/api/admin/free-remove', (req, res) => {
+app.post('/api/admin/free-remove', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
     try {
         const { nickname } = req.body;
         if (!nickname) return res.status(400).json({ success: false, error: '请输入昵称' });
-        const result = db.removeFreeUser(nickname);
+        const result = await db.removeFreeUser(nickname);
         if (result.success) res.json({ success: true, message: `已将「${nickname}」从免费名单移除` });
         else res.status(400).json(result);
     } catch (e) {
@@ -372,21 +377,21 @@ app.post('/api/admin/free-remove', (req, res) => {
 /**
  * 用户列表
  */
-app.get('/api/admin/users', (req, res) => {
+app.get('/api/admin/users', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: db.getUserList() });
+    res.json({ success: true, data: await db.getUserList() });
 });
 
 /**
  * 用户充值（按昵称或deviceId）
  */
-app.post('/api/admin/recharge', (req, res) => {
+app.post('/api/admin/recharge', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
     try {
         const { nickname, device_id, amount } = req.body;
         const identifier = nickname || device_id;
         if (!identifier || !amount || amount <= 0) return res.status(400).json({ success: false, error: '参数无效' });
-        const result = db.addBalance(identifier, parseFloat(amount));
+        const result = await db.addBalance(identifier, parseFloat(amount));
         if (result.success) res.json({ success: true, data: result });
         else res.status(400).json(result);
     } catch (e) {
@@ -398,12 +403,13 @@ app.post('/api/admin/recharge', (req, res) => {
  * 获取用户生成历史（我的作品）
  * GET /api/my-songs?device_id=xxx
  */
-app.get('/api/my-songs', (req, res) => {
+app.get('/api/my-songs', async (req, res) => {
     try {
         const deviceId = req.query.device_id;
+        const nickname = req.query.nickname || '';
         if (!deviceId) return res.status(400).json({ success: false, error: '缺少 device_id' });
 
-        const records = db.getSharesByDeviceId(deviceId);
+        const records = await db.getSharesByDeviceId(deviceId, nickname);
         // 返回精简数据（不含大字段优化传输）
         const data = records.map(r => ({
             id: r.id,
@@ -435,18 +441,21 @@ app.get('/health', (req, res) => {
 });
 
 // ============ 启动 ============
-app.listen(PORT, () => {
-    console.log(`
+(async () => {
+    await db.init();
+    app.listen(PORT, () => {
+        console.log(`
 ╔═══════════════════════════════════════════════╗
-║         音谋加 服务器 v2.3 已启动              ║
+║         音谋加 服务器 v3.0 已启动              ║
 ╠═══════════════════════════════════════════════╣
 ║  地址: http://localhost:${PORT}                    ║
 ║  前端: http://localhost:${PORT}/index.html          ║
 ║  分享: http://localhost:${PORT}/share.html           ║
 ║  管理: http://localhost:${PORT}/admin.html         ║
-║  API Key: ${config.apiKey ? '已配置' : '未配置'}                        ║
+║  MongoDB: ${process.env.MONGODB_URI ? '已配置' : '未配置（使用内存模式）'}          ║
 ╚═══════════════════════════════════════════════╝
-    `);
-});
+        `);
+    });
+})();
 
 module.exports = app;

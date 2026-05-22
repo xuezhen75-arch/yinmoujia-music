@@ -15,7 +15,7 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // 初始化数据库
-const FREE_LIMIT = 5;  // 免费次数
+const FREE_LIMIT = 3;  // 免费次数
 const PRICE_PER_SONG = 0.8;  // 每首收费（元）
 
 function init() {
