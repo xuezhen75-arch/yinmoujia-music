@@ -12,10 +12,9 @@ const axios = require('axios');
 
 const AIMusicAPI = require('./aimusic-api');
 
-// DB: 优先 MongoDB，没有 URI 则 JSON 文件兜底
-const USE_MONGO = !!process.env.MONGODB_URI;
-const db = USE_MONGO ? require('./database-mongo') : require('./database-simple');
-console.log(`[DB] 使用 ${USE_MONGO ? 'MongoDB' : 'JSON文件'} 存储`);
+// DB: 优先 MongoDB，连接失败自动 JSON 文件兜底
+let USE_MONGO = !!process.env.MONGODB_URI;
+let db = USE_MONGO ? require('./database-mongo') : require('./database-simple');
 
 // ============ 配置 ============
 const PORT = process.env.PORT || 3000;
@@ -446,7 +445,18 @@ app.get('/health', (req, res) => {
 
 // ============ 启动 ============
 (async () => {
-    await db.init();
+    if (USE_MONGO) {
+        const ok = await db.init();
+        if (!ok) {
+            console.warn('[DB] MongoDB 连接失败，回退到 JSON 文件存储');
+            db = require('./database-simple');
+            USE_MONGO = false;
+        }
+    }
+    // JSON DB 的 init 是同步的
+    if (!USE_MONGO) db.init();
+    console.log(`[DB] 使用 ${USE_MONGO ? 'MongoDB' : 'JSON文件'} 存储`);
+
     app.listen(PORT, () => {
         console.log(`
 ╔═══════════════════════════════════════════════╗
@@ -456,7 +466,7 @@ app.get('/health', (req, res) => {
 ║  前端: http://localhost:${PORT}/index.html          ║
 ║  分享: http://localhost:${PORT}/share.html           ║
 ║  管理: http://localhost:${PORT}/admin.html         ║
-║  MongoDB: ${process.env.MONGODB_URI ? '已配置' : '未配置（使用内存模式）'}          ║
+║  DB: ${USE_MONGO ? 'MongoDB' : 'JSON文件'}              ║
 ╚═══════════════════════════════════════════════╝
         `);
     });
