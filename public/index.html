@@ -535,6 +535,7 @@ const state = {
     lyricsMode: 'ai',  // 'ai' | 'custom' | 'instrumental'
     isPlaying: false,
     currentAudioUrl: null,
+    currentVideoUrl: null,   // MP4地址
     currentTitle: null,
     currentImageUrl: null,
     audioPlayer: null,
@@ -979,6 +980,7 @@ function applySong(song) {
 
     // 音频
     state.currentAudioUrl = song.audioUrl;
+    state.currentVideoUrl = song.videoUrl || '';
     state.isPlaying = false;
     document.getElementById('playBtn').textContent = '▶️';
     document.getElementById('progressBar').style.width = '0%';
@@ -1151,6 +1153,7 @@ function playHistorySong(ri, si) {
     state.currentTitle = song.title || 'AI音乐';
     state.currentImageUrl = song.imageUrl;
     state.currentAudioUrl = song.audioUrl;
+    state.currentVideoUrl = song.videoUrl || '';
     state.currentLyrics = song.lyrics || '';
     state.isPlaying = false;
 
@@ -1175,17 +1178,7 @@ function downloadHistorySong(ri, si) {
     const song = mySongsData[ri]?.songs?.[si];
     if (!song || !song.audioUrl) { showToast('音频不可用', 'warn'); return; }
     const title = song.title || 'music';
-
-    if (/MicroMessenger/i.test(navigator.userAgent)) {
-        showWechatDownloadGuide(song.audioUrl, title);
-        return;
-    }
-
-    const url = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(song.audioUrl)}&title=${encodeURIComponent(title)}`;
-    const a = document.createElement('a');
-    a.href = url; a.download = title + '.mp3'; a.target = '_blank';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    showToast('📥 开始下载...', 'success');
+    showDownloadFormatModal(song.audioUrl, song.videoUrl || '', title);
 }
 
 function shareHistorySong(ri, si) {
@@ -1278,18 +1271,63 @@ function manualCopyText(text) {
 function downloadMusic() {
     if (!state.currentAudioUrl) { showToast('没有音频可下载', 'warn'); return; }
     const title = state.currentTitle || 'music';
+    showDownloadFormatModal(state.currentAudioUrl, state.currentVideoUrl || '', title);
+}
 
-    // 微信内置浏览器检测：微信不支持a.download，需要引导用浏览器打开
+// ============ 下载格式选择弹窗 ============
+function showDownloadFormatModal(audioUrl, videoUrl, title) {
+    const old = document.getElementById('downloadModal');
+    if (old) old.remove();
+
+    const inWechat = isWechat();
+    const hasMp4 = !!videoUrl;
+
+    const modal = document.createElement('div');
+    modal.id = 'downloadModal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;box-sizing:border-box;';
+
+    const mp3Url = `${location.origin}/api/proxy-download?url=${encodeURIComponent(audioUrl)}&title=${encodeURIComponent(title)}&format=mp3`;
+    const mp4Url = hasMp4 ? `${location.origin}/api/proxy-download?url=${encodeURIComponent(videoUrl)}&title=${encodeURIComponent(title)}&format=mp4` : '';
+
+    const mp4Btn = hasMp4
+        ? `<button onclick="doDownload('${escAttr(mp4Url)}','${escAttr(title)}.mp4',this)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:14px;padding:15px;font-size:15px;color:#fff;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;"><span>🎬</span><span><strong>MP4</strong> 视频（带封面动效）</span></button>`
+        : `<div style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:15px;font-size:13px;color:#444;text-align:center;margin-bottom:10px;">🎬 MP4 暂未生成完成</div>`;
+
+    modal.innerHTML = `
+        <div id="downloadModalCard" style="width:100%;background:#111827;border-radius:24px 24px 0 0;padding:28px 24px 36px;box-sizing:border-box;">
+            <div style="width:40px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:0 auto 20px;"></div>
+            <div style="color:#fff;font-size:16px;font-weight:bold;text-align:center;margin-bottom:6px;">⬇️ 选择下载格式</div>
+            <div style="color:#555;font-size:12px;text-align:center;margin-bottom:20px;">${escHtml(title)}</div>
+            ${inWechat ? `<div style="background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:12px;padding:12px 16px;color:#ffc107;font-size:13px;text-align:center;margin-bottom:16px;line-height:1.7;">微信内请点右上角 <strong>···</strong> → 在浏览器打开后再下载<br>或点下方复制链接到浏览器粘贴</div>` : ''}
+            <button onclick="doDownload('${escAttr(mp3Url)}','${escAttr(title)}.mp3',this)" style="width:100%;background:linear-gradient(90deg,#00d9ff,#00ff88);border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:bold;color:#0a0a14;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;"><span>🎵</span><span><strong>MP3</strong> 纯音频（推荐）</span></button>
+            ${mp4Btn}
+            <button onclick="document.getElementById('downloadModal').remove()" style="width:100%;background:transparent;border:none;padding:12px;font-size:14px;color:#555;cursor:pointer;">取消</button>
+        </div>
+    `;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+    const card = document.getElementById('downloadModalCard');
+    card.style.transform = 'translateY(100%)';
+    card.style.transition = 'transform 0.3s ease';
+    setTimeout(() => { card.style.transform = 'translateY(0)'; }, 10);
+}
+
+function doDownload(url, filename, btn) {
     if (isWechat()) {
-        showWechatDownloadGuide(state.currentAudioUrl, title);
+        // 微信内复制链接
+        if (btn) { btn.innerHTML = btn.innerHTML.replace(/.*/, ''); btn.textContent = '✅ 链接已复制，去浏览器粘贴'; btn.style.opacity = '0.7'; }
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).catch(() => manualCopyText(url));
+        } else { manualCopyText(url); }
+        showToast('📥 链接已复制，去浏览器粘贴下载', 'success');
         return;
     }
-
-    const downloadUrl = `${API_BASE}/api/proxy-download?url=${encodeURIComponent(state.currentAudioUrl)}&title=${encodeURIComponent(title)}`;
+    if (btn) { btn.textContent = '⏳ 下载中...'; btn.disabled = true; setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '✅ 已开始下载'; } }, 2000); }
     const a = document.createElement('a');
-    a.href = downloadUrl; a.download = title + '.mp3'; a.target = '_blank'; a.rel = 'noopener';
+    a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    showToast('📥 开始下载...', 'success');
+    showToast('📥 开始下载 ' + filename, 'success');
+    setTimeout(() => { const m = document.getElementById('downloadModal'); if (m) m.remove(); }, 1500);
 }
 
 function isWechat() {

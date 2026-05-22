@@ -210,6 +210,7 @@ app.post('/api/generate', async (req, res) => {
                 index: i,
                 title: s.title,
                 audioUrl: s.audioUrl,
+                videoUrl: s.videoUrl || '',   // MP4视频
                 imageUrl: s.imageUrl,
                 lyrics: s.lyrics || ''
             })),
@@ -282,19 +283,22 @@ app.get('/api/config', (req, res) => {
 });
 
 /**
- * 代理下载 MP3
- * GET /api/proxy-download?url=xxx&title=xxx
+ * 代理下载 MP3 / MP4
+ * GET /api/proxy-download?url=xxx&title=xxx&format=mp3|mp4
  */
 app.get('/api/proxy-download', async (req, res) => {
     try {
-        const { url, title } = req.query;
+        const { url, title, format } = req.query;
         if (!url) return res.status(400).json({ success: false, error: '缺少 url' });
 
         const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 60000 });
 
         const safeTitle = (title || 'music').replace(/[^\w\u4e00-\u9fff\-_ ]/g, '');
-        res.setHeader('Content-Type', 'audio/mpeg');
-        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(safeTitle + '.mp3')}`);
+        const isMp4 = format === 'mp4';
+        const ext = isMp4 ? '.mp4' : '.mp3';
+        const contentType = isMp4 ? 'video/mp4' : 'audio/mpeg';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(safeTitle + ext)}`);
         res.setHeader('Content-Length', response.data.length);
         res.send(response.data);
     } catch (e) {
@@ -412,6 +416,7 @@ app.get('/api/my-songs', (req, res) => {
             songs: (r.songs || []).map(s => ({
                 title: s.title,
                 audioUrl: s.audioUrl,
+                videoUrl: s.videoUrl || '',
                 imageUrl: s.imageUrl,
                 lyrics: s.lyrics || ''
             }))

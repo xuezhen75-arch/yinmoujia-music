@@ -259,6 +259,7 @@ class AIMusicAPI {
                 songs.push({
                     title: s.title || 'Untitled',
                     audioUrl: s.audioUrl || '',
+                    videoUrl: s.videoUrl || '',   // MP4视频地址（豆源返回）
                     imageUrl: s.coverUrl || '',
                     lyrics: s.lyric || '',
                     taskId: taskId
