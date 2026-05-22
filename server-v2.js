@@ -326,12 +326,14 @@ app.post('/api/admin/gen-codes', async (req, res) => {
 
 app.get('/api/admin/codes', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: await db.getUnusedCodes() });
+    try { res.json({ success: true, data: await db.getUnusedCodes() }); }
+    catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.get('/api/admin/stats', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: await db.getStats() });
+    try { res.json({ success: true, data: await db.getStats() }); }
+    catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 /**
@@ -339,7 +341,8 @@ app.get('/api/admin/stats', async (req, res) => {
  */
 app.get('/api/admin/free-list', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: await db.getFreeList() });
+    try { res.json({ success: true, data: await db.getFreeList() }); }
+    catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 /**
@@ -379,7 +382,8 @@ app.post('/api/admin/free-remove', async (req, res) => {
  */
 app.get('/api/admin/users', async (req, res) => {
     if (!isAdmin(req)) return res.status(401).json({ success: false, error: '未授权' });
-    res.json({ success: true, data: await db.getUserList() });
+    try { res.json({ success: true, data: await db.getUserList() }); }
+    catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 /**
