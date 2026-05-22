@@ -13,7 +13,7 @@
 const axios = require('axios');
 
 const API_BASE = 'https://suno.x-mi.cn/apiclouds/v1/suno';
-const POLL_INTERVAL = 5000; // 轮询间隔5秒
+const POLL_INTERVAL = 3000; // 轮询间隔3秒（原5秒，加快响应）
 const MAX_POLL_TIME = 300000; // 最大轮询5分钟
 
 class AIMusicAPI {
@@ -197,20 +197,19 @@ class AIMusicAPI {
                     }
 
                     // 如果有歌曲数据但有音频URL，也视为可用（streaming状态但有audioUrl）
-                    // 但优先等两首都出现，至少等第一首complete再给15秒让第二首赶上来
                     if (data.list && data.list.some(s => s.audioUrl)) {
+                        const songsWithAudio = data.list.filter(s => s.audioUrl);
                         const streamingCount = data.list.filter(s => s.state === 'streaming' || s.state === 'complete' || s.state === 'completed').length;
-                        const completeCount = data.list.filter(s => s.state === 'complete' || s.state === 'completed').length;
 
-                        // 如果两首都开始streaming了，且有音频，返回
-                        if (streamingCount >= 2 && data.list.filter(s => s.audioUrl).length >= 2) {
+                        // 两首都有audioUrl，立即返回（无需等complete）
+                        if (songsWithAudio.length >= 2) {
                             const songs = this.parseSongs(data, taskId);
-                            console.log('两首都已有音频，返回', songs.length, '首');
+                            console.log('两首都已有音频，立即返回', songs.length, '首');
                             return { success: true, songs };
                         }
 
-                        // 如果第一首complete了，等第二首最多再查4次（20秒）
-                        if (completeCount >= 1 && attempts > 12) {
+                        // 一首有audioUrl，再等3次（9秒）让第二首赶上，否则先返回
+                        if (songsWithAudio.length >= 1 && attempts > 3) {
                             const songs = this.parseSongs(data, taskId);
                             if (songs.some(s => s.audioUrl)) {
                                 console.log('等待超限，返回已有', songs.length, '首歌');
