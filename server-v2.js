@@ -437,7 +437,7 @@ app.get('/api/my-songs', async (req, res) => {
  * 健康检查
  */
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', version: '2.3', time: new Date().toISOString() });
+    res.json({ status: 'ok', version: '3.0', db: USE_MONGO ? 'mongodb' : 'json', time: new Date().toISOString() });
 });
 
 // ============ 启动 ============
