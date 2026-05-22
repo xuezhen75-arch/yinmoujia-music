@@ -62,7 +62,7 @@
 <body>
 <div class="wrap">
     <h1>音谋加 管理后台</h1>
-    <p class="subtitle">v2.3 · 昵称登录 · VIP名单 · 解锁码管理 · 用户充值</p>
+    <p class="subtitle">v3.0 · MongoDB持久化 · 昵称绑定 · 3次免费</p>
 
     <!-- 数据概览 -->
     <div class="card">
@@ -74,7 +74,7 @@
             <div class="stat"><div class="stat-num" id="statRevenue">-</div><div class="stat-label">总充值额</div></div>
         </div>
         <div class="config-info">
-            <div class="config-item">免费额度：<strong id="cfgFreeLimit">5</strong> 次/人</div>
+            <div class="config-item">免费额度：<strong id="cfgFreeLimit">3</strong> 次/人</div>
             <div class="config-item">单首价格：<strong>¥0.8</strong></div>
             <div class="config-item">解锁码总数：<strong id="statCodes">-</strong></div>
             <div class="config-item">已使用码：<strong id="statUsed">-</strong></div>
@@ -226,7 +226,7 @@ async function loadStats() {
             document.getElementById('statCodes').textContent = d.totalCodes;
             document.getElementById('statUsed').textContent = d.usedCodes;
             document.getElementById('statRevenue').textContent = '¥' + (d.totalBalance || 0).toFixed(2);
-            document.getElementById('cfgFreeLimit').textContent = d.freeLimit || 5;
+            document.getElementById('cfgFreeLimit').textContent = d.freeLimit || 3;
         }
     } catch(e) { console.error('loadStats error', e); }
 }

@@ -72,9 +72,18 @@ const FreeList = mongoose.model('FreeList', FreeListSchema);
 
 let connected = false;
 
+// Mongoose 事件：连接断开时自动重连
+mongoose.connection.on('disconnected', () => {
+    console.warn('[MongoDB] 连接断开，尝试重连...');
+    connected = false;
+});
+mongoose.connection.on('error', (err) => {
+    console.error('[MongoDB] 连接错误:', err.message);
+});
+
 async function init() {
     if (!MONGODB_URI) {
-        console.warn('[MongoDB] MONGODB_URI 未配置，使用内存模式（数据不持久化）');
+        console.warn('[MongoDB] MONGODB_URI 未配置，使用JSON文件兜底');
         return false;
     }
     if (connected) return true;
