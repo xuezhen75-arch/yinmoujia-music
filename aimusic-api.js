@@ -197,9 +197,9 @@ class AIMusicAPI {
                     }
 
                     // 如果有歌曲数据但有音频URL，也视为可用（streaming状态但有audioUrl）
-                    if (data.list && data.list.some(s => s.audioUrl)) {
+                    // 关键：必须等两首都出现才返回，避免只返回一首
+                    if (data.list && data.list.length >= 2 && data.list.some(s => s.audioUrl)) {
                         const songsWithAudio = data.list.filter(s => s.audioUrl);
-                        const streamingCount = data.list.filter(s => s.state === 'streaming' || s.state === 'complete' || s.state === 'completed').length;
 
                         // 两首都有audioUrl，立即返回（无需等complete）
                         if (songsWithAudio.length >= 2) {
@@ -208,13 +208,14 @@ class AIMusicAPI {
                             return { success: true, songs };
                         }
 
-                        // 一首有audioUrl，再等3次（9秒）让第二首赶上，否则先返回
-                        if (songsWithAudio.length >= 1 && attempts > 3) {
-                            const songs = this.parseSongs(data, taskId);
-                            if (songs.some(s => s.audioUrl)) {
-                                console.log('等待超限，返回已有', songs.length, '首歌');
-                                return { success: true, songs };
-                            }
+                        // 只有一首有audioUrl，必须等第二首
+                        // 至少等6次（18秒），如果第二首开始streaming了（有progress但没audioUrl），给更多时间
+                        if (attempts > 10) {
+                            // 等了30秒以上第二首还没audioUrl，可能是第二首失败
+                            // 但仍返回两首数据，让前端决定
+                            const songs = this.parseSongsIncludePending(data, taskId);
+                            console.log('等待超限(30s+)，返回', songs.length, '首歌（可能包含pending）');
+                            return { success: true, songs };
                         }
                     }
 
@@ -289,6 +290,31 @@ class AIMusicAPI {
                 lyrics: data.lyrics || data.lyric || '',
                 taskId: taskId
             });
+        }
+
+        return songs;
+    }
+
+    /**
+     * 解析歌曲数据（包含pending的）
+     * 等待超限时使用：保留没有audioUrl但有其他数据的歌曲
+     */
+    parseSongsIncludePending(data, taskId) {
+        const songs = [];
+
+        if (data.list && Array.isArray(data.list)) {
+            for (const s of data.list) {
+                if (!s.audioUrl && !s.title) continue;
+                songs.push({
+                    title: s.title || '生成中...',
+                    audioUrl: s.audioUrl || '',
+                    videoUrl: s.videoUrl || '',
+                    imageUrl: s.coverUrl || '',
+                    lyrics: s.lyric || '',
+                    taskId: taskId,
+                    pending: !s.audioUrl
+                });
+            }
         }
 
         return songs;
